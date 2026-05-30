@@ -15,7 +15,7 @@ namespace StudyTrackerApp.Controllers
             _context = context;
         }
 
-        // GET: api/Tarefas (FILTROS INTELIGENTES)
+        // GET: api/Tarefas (US10 - FILTROS INTELIGENTES)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefa(
             [FromQuery] int? estudanteId = null,
@@ -23,13 +23,11 @@ namespace StudyTrackerApp.Controllers
         {
             var query = _context.Tarefas.AsQueryable();
 
-            // 1. Filtro por Estudante
             if (estudanteId.HasValue)
             {
                 query = query.Where(t => t.EstudanteId == estudanteId.Value);
             }
 
-            // 2. Filtro por Status (Concluída ou Pendente)
             if (concluida.HasValue)
             {
                 query = query.Where(t => t.Concluida == concluida.Value);
@@ -38,29 +36,61 @@ namespace StudyTrackerApp.Controllers
             return await query.ToListAsync();
         }
 
-        // GET: api/Tarefas/calendario (US06 - DASHBOARD COM CALENDÁRIO)
-        // Exemplo de uso: api/Tarefas/calendario?ano=2026&mes=5&estudanteId=1
+        // GET: api/Tarefas/calendario (US06 & US09 - DASHBOARD, CALENDÁRIO E ALERTAS)
         [HttpGet("calendario")]
         public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefasCalendario(
             [FromQuery] int ano,
             [FromQuery] int mes,
             [FromQuery] int? estudanteId = null)
         {
-            // Define o primeiro dia do mês e calcula o último dia dele de forma automática
             var dataInicio = new DateTime(ano, mes, 1);
             var dataFim = dataInicio.AddMonths(1).AddDays(-1);
 
-            // Busca as tarefas que estão dentro do período desse mês específico
             var query = _context.Tarefas.Where(t => t.Data >= dataInicio && t.Data <= dataFim);
 
-            // Filtra pelo estudante logado para o calendário ser individual
             if (estudanteId.HasValue)
             {
                 query = query.Where(t => t.EstudanteId == estudanteId.Value);
             }
 
-            // Retorna as tarefas ordenadas por dia para o calendário renderizar na ordem certa
             return await query.OrderBy(t => t.Data).ToListAsync();
+        }
+
+        // GET: api/Tarefas/estatisticas (US11 - MOTOR DE CÁLCULO DE PROGRESSO)
+        // Alimenta o gráfico "3 de 10 concluídas" e a barra de progresso do React
+        [HttpGet("estatisticas")]
+        public async Task<IActionResult> GetEstatisticas([FromQuery] int estudanteId)
+        {
+            var tarefas = await _context.Tarefas
+                .Where(t => t.EstudanteId == estudanteId)
+                .ToListAsync();
+
+            int total = tarefas.Count;
+            int concluidas = tarefas.Count(t => t.Concluida);
+
+            // Tratamento matemático caso o estudante não tenha nenhuma tarefa cadastrada ainda
+            double progresso = total > 0 ? Math.Round(((double)concluidas / total) * 100, 1) : 0;
+
+            return Ok(new { total, concluidas, progresso });
+        }
+
+        // PATCH: api/Tarefas/5/alternar-conclusao (US08 - ALTERAÇÃO PARCIAL DE ESTADO LOGICO)
+        [HttpPatch("{id}/alternar-conclusao")]
+        public async Task<IActionResult> AlternarConclusao(int id)
+        {
+            var tarefa = await _context.Tarefas.FindAsync(id);
+            if (tarefa == null)
+            {
+                return NotFound("Tarefa não encontrada.");
+            }
+
+            // Inverte o estado atual do booleano de forma inteligente
+            tarefa.Concluida = !tarefa.Concluida;
+
+            _context.Entry(tarefa).Property(x => x.Concluida).IsModified = true;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = tarefa.Id, concluida = tarefa.Concluida });
         }
 
         // GET: api/Tarefas/5
