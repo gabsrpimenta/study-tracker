@@ -15,29 +15,52 @@ namespace StudyTrackerApp.Controllers
             _context = context;
         }
 
-        // GET: api/Tarefas (ATUALIZADO COM OS FILTROS REAIS DO TEU MODELO)
+        // GET: api/Tarefas (FILTROS INTELIGENTES)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefa(
             [FromQuery] int? estudanteId = null,
             [FromQuery] bool? concluida = null)
         {
-            // Começamos com a query base de tarefas
             var query = _context.Tarefas.AsQueryable();
 
-            // 1. FILTRO POR ESTUDANTE: Se o React enviar o ID do estudante logado
+            // 1. Filtro por Estudante
             if (estudanteId.HasValue)
             {
                 query = query.Where(t => t.EstudanteId == estudanteId.Value);
             }
 
-            // 2. FILTRO POR STATUS (CONCLUÍDA): Se enviar true (concluídas) ou false (pendentes)
+            // 2. Filtro por Status (Concluída ou Pendente)
             if (concluida.HasValue)
             {
                 query = query.Where(t => t.Concluida == concluida.Value);
             }
 
-            // Executa tudo no banco SQLite de forma ultra rápida
             return await query.ToListAsync();
+        }
+
+        // GET: api/Tarefas/calendario (US06 - DASHBOARD COM CALENDÁRIO)
+        // Exemplo de uso: api/Tarefas/calendario?ano=2026&mes=5&estudanteId=1
+        [HttpGet("calendario")]
+        public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefasCalendario(
+            [FromQuery] int ano,
+            [FromQuery] int mes,
+            [FromQuery] int? estudanteId = null)
+        {
+            // Define o primeiro dia do mês e calcula o último dia dele de forma automática
+            var dataInicio = new DateTime(ano, mes, 1);
+            var dataFim = dataInicio.AddMonths(1).AddDays(-1);
+
+            // Busca as tarefas que estão dentro do período desse mês específico
+            var query = _context.Tarefas.Where(t => t.Data >= dataInicio && t.Data <= dataFim);
+
+            // Filtra pelo estudante logado para o calendário ser individual
+            if (estudanteId.HasValue)
+            {
+                query = query.Where(t => t.EstudanteId == estudanteId.Value);
+            }
+
+            // Retorna as tarefas ordenadas por dia para o calendário renderizar na ordem certa
+            return await query.OrderBy(t => t.Data).ToListAsync();
         }
 
         // GET: api/Tarefas/5
