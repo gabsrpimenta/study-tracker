@@ -3,11 +3,11 @@ using StudyTrackerApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configuração do Banco de Dados SQLite (Essencial para as Migrations funcionarem!)
+// Configuração do banco de dados SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Configuração do CORS (Para permitir que o React da Gabriella aceda à tua API)
+// Configuração do CORS para o React conseguir acessar a API
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact",
@@ -18,12 +18,12 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 
-// Configuração do OpenAPI/Swagger
+// Ativa a documentação do Swagger/OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configura o pipeline de requisições HTTP
+// Configurações exclusivas para o ambiente de desenvolvimento
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -31,11 +31,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 3. Ativar o CORS antes das rotas
+// Ativa o CORS e as rotas dos controladores
 app.UseCors("AllowReact");
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

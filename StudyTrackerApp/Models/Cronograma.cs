@@ -1,16 +1,30 @@
-﻿namespace StudyTrackerApp.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace StudyTrackerApp.Models
 {
     public class Cronograma
     {
+        // Identificação única no banco de dados
+        [Key]
         public int Id { get; set; }
-        public string Titulo { get; set; } = string.Empty; // Ex: "Teste de Matemática", "Trabalho de História"
-        public string Subtitulo { get; set; } = string.Empty; // Ex: "Álgebra", "História Contemporânea"
+
+        // Nome da tarefa, campo obrigatório para não salvar tarefa sem nome
+        [Required(ErrorMessage = "O título é obrigatório.")]
+        public string Titulo { get; set; } = string.Empty;
+
+        // Uma descrição curta extra (opcional)
+        public string Subtitulo { get; set; } = string.Empty;
+
+        // Dia e hora que o evento vai acontecer
+        [Required]
         public DateTime Data { get; set; }
 
-        // Tipo do evento: "Teste", "Entrega" ou "Projeto" (para mudar a cor na tela)
+        // Tipo da tarefa 
+        [Required(ErrorMessage = "O tipo do evento é obrigatório.")]
         public string Tipo { get; set; } = string.Empty;
 
-        // Relacionamento: Todo evento do cronograma está ligado a uma matéria
+        // Liga esse evento a uma matéria específica
+        [Required]
         public int MateriaId { get; set; }
         public Materia? Materia { get; set; }
     }

@@ -4,17 +4,20 @@ namespace StudyTrackerApp.Models
 {
     public class Estudante
     {
+        // Identificação única no banco de dados
+        [Key]
         public int Id { get; set; }
 
-        [Required]
+        // Nome do estudante
+        [Required(ErrorMessage = "O nome é obrigatório.")]
         public string Nome { get; set; } = string.Empty;
 
-        // Adicionamos o Email como campo obrigatório para o Login
-        [Required]
-        [EmailAddress] // Garante que o formato seja um e-mail válido (ex@ex.com)
+        // E-mail usado para login (formato deve ser válido)
+        [Required(ErrorMessage = "O e-mail é obrigatório.")]
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        // Aqui guardamos a senha criptografada (Hash), nunca a senha real
+        // Senha salva como código (hash) por segurança
         [Required]
         public string SenhaHash { get; set; } = string.Empty;
     }

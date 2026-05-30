@@ -15,7 +15,7 @@ namespace StudyTrackerApp.Controllers
             _context = context;
         }
 
-        // GET: api/Tarefas (US10 - FILTROS INTELIGENTES)
+        // GET: api/Tarefas
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefa(
             [FromQuery] int? estudanteId = null,
@@ -23,6 +23,7 @@ namespace StudyTrackerApp.Controllers
         {
             var query = _context.Tarefas.AsQueryable();
 
+            // Aplica os filtros dinamicamente se forem informados
             if (estudanteId.HasValue)
             {
                 query = query.Where(t => t.EstudanteId == estudanteId.Value);
@@ -36,13 +37,14 @@ namespace StudyTrackerApp.Controllers
             return await query.ToListAsync();
         }
 
-        // GET: api/Tarefas/calendario (US06 & US09 - DASHBOARD, CALENDÁRIO E ALERTAS)
+        // GET: api/Tarefas/calendario
         [HttpGet("calendario")]
         public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefasCalendario(
             [FromQuery] int ano,
             [FromQuery] int mes,
             [FromQuery] int? estudanteId = null)
         {
+            // Define o período inicial e final do mês selecionado
             var dataInicio = new DateTime(ano, mes, 1);
             var dataFim = dataInicio.AddMonths(1).AddDays(-1);
 
@@ -56,8 +58,7 @@ namespace StudyTrackerApp.Controllers
             return await query.OrderBy(t => t.Data).ToListAsync();
         }
 
-        // GET: api/Tarefas/estatisticas (US11 - MOTOR DE CÁLCULO DE PROGRESSO)
-        // Alimenta o gráfico "3 de 10 concluídas" e a barra de progresso do React
+        // GET: api/Tarefas/estatisticas
         [HttpGet("estatisticas")]
         public async Task<IActionResult> GetEstatisticas([FromQuery] int estudanteId)
         {
@@ -68,13 +69,13 @@ namespace StudyTrackerApp.Controllers
             int total = tarefas.Count;
             int concluidas = tarefas.Count(t => t.Concluida);
 
-            // Tratamento matemático caso o estudante não tenha nenhuma tarefa cadastrada ainda
+            // Calcula a porcentagem evitando divisão por zero se não houver tarefas
             double progresso = total > 0 ? Math.Round(((double)concluidas / total) * 100, 1) : 0;
 
             return Ok(new { total, concluidas, progresso });
         }
 
-        // PATCH: api/Tarefas/5/alternar-conclusao (US08 - ALTERAÇÃO PARCIAL DE ESTADO LOGICO)
+        // PATCH: api/Tarefas/5/alternar-conclusao
         [HttpPatch("{id}/alternar-conclusao")]
         public async Task<IActionResult> AlternarConclusao(int id)
         {
@@ -84,7 +85,7 @@ namespace StudyTrackerApp.Controllers
                 return NotFound("Tarefa não encontrada.");
             }
 
-            // Inverte o estado atual do booleano de forma inteligente
+            // Inverte o estado de conclusão da tarefa
             tarefa.Concluida = !tarefa.Concluida;
 
             _context.Entry(tarefa).Property(x => x.Concluida).IsModified = true;
@@ -101,7 +102,7 @@ namespace StudyTrackerApp.Controllers
 
             if (tarefa == null)
             {
-                return NotFound();
+                return NotFound("Tarefa não encontrada.");
             }
 
             return tarefa;
@@ -109,11 +110,11 @@ namespace StudyTrackerApp.Controllers
 
         // PUT: api/Tarefas/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTarefa(int? id, Tarefa tarefa)
+        public async Task<IActionResult> PutTarefa(int id, Tarefa tarefa)
         {
             if (id != tarefa.Id)
             {
-                return BadRequest();
+                return BadRequest("O ID informado não coincide com o objeto.");
             }
 
             _context.Entry(tarefa).State = EntityState.Modified;
@@ -126,7 +127,7 @@ namespace StudyTrackerApp.Controllers
             {
                 if (!TarefaExists(id))
                 {
-                    return NotFound();
+                    return NotFound("Tarefa não encontrada para atualização.");
                 }
                 else
                 {
@@ -149,12 +150,12 @@ namespace StudyTrackerApp.Controllers
 
         // DELETE: api/Tarefas/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTarefa(int? id)
+        public async Task<IActionResult> DeleteTarefa(int id)
         {
             var tarefa = await _context.Tarefas.FindAsync(id);
             if (tarefa == null)
             {
-                return NotFound();
+                return NotFound("Tarefa não encontrada para exclusão.");
             }
 
             _context.Tarefas.Remove(tarefa);
@@ -163,7 +164,7 @@ namespace StudyTrackerApp.Controllers
             return NoContent();
         }
 
-        private bool TarefaExists(int? id)
+        private bool TarefaExists(int id)
         {
             return _context.Tarefas.Any(e => e.Id == id);
         }
