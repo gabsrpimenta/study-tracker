@@ -1,38 +1,45 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StudyTrackerApp.Models;
+using System.Text;
+using QuestPDF.Infrastructure; // Importante: Adicione este namespace
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuração do banco de dados SQLite
+// Configuração do QuestPDF (Licença Community para uso gratuito/estudantil)
+QuestPDF.Settings.License = LicenseType.Community;
+
+// Configuração do banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configuração do CORS para o React conseguir acessar a API
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReact",
-        policy => policy.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader());
+// Configuração do JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("uma_chave_muito_longa_e_secreta_para_seguranca_12345")),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowReact", policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
 builder.Services.AddControllers();
-
-// Ativa a documentação do Swagger/OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configurações exclusivas para o ambiente de desenvolvimento
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+if (app.Environment.IsDevelopment()) { app.MapOpenApi(); }
 
 app.UseHttpsRedirection();
-
-// Ativa o CORS e as rotas dos controladores
 app.UseCors("AllowReact");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

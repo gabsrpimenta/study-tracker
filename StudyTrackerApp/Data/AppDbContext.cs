@@ -11,5 +11,6 @@ namespace StudyTrackerApp.Models
         public DbSet<Materia> Materias { get; set; }
         public DbSet<Tarefa> Tarefas { get; set; }
         public DbSet<Cronograma> Cronogramas { get; set; }
+        public DbSet<Pomodoro> Pomodoros { get; set; }
     }
 }

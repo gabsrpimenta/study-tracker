@@ -1,72 +1,35 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StudyTrackerApp.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
-namespace StudyTrackerApp.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly AppDbContext _context;
+    public AuthController(AppDbContext context) => _context = context;
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        private readonly AppDbContext _context;
+        var estudante = await _context.Estudantes.FirstOrDefaultAsync(e => e.Email == dto.Email);
+        if (estudante == null || !BCrypt.Net.BCrypt.Verify(dto.Senha, estudante.SenhaHash))
+            return Unauthorized("Credenciais inválidas.");
 
-        public AuthController(AppDbContext context)
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes("uma_chave_muito_longa_e_secreta_para_seguranca_12345");
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            _context = context;
-        }
+            Subject = new ClaimsIdentity(new[] { new Claim("id", estudante.Id.ToString()) }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        // POST: api/Auth/registrar
-        [HttpPost("registrar")]
-        public async Task<IActionResult> Registrar([FromBody] LoginDto dto)
-        {
-            // Evita o cadastro de e-mails duplicados
-            var usuarioExiste = await _context.Estudantes.AnyAsync(e => e.Email == dto.Email);
-            if (usuarioExiste)
-            {
-                return BadRequest("Este e-mail já está cadastrado.");
-            }
-
-            // Cria a hash segura da senha usando BCrypt
-            string senhaCriptografada = BCrypt.Net.BCrypt.HashPassword(dto.Senha);
-
-            var novoEstudante = new Estudante
-            {
-                Nome = dto.Email.Split('@')[0], // Usa a primeira parte do e-mail como nome padrão
-                Email = dto.Email,
-                SenhaHash = senhaCriptografada
-            };
-
-            _context.Estudantes.Add(novoEstudante);
-            await _context.SaveChangesAsync();
-
-            return Ok("Usuário cadastrado com sucesso!");
-        }
-
-        // POST: api/Auth/login
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto dto)
-        {
-            // Busca o usuário pelo e-mail informado
-            var estudante = await _context.Estudantes.FirstOrDefaultAsync(e => e.Email == dto.Email);
-            if (estudante == null)
-            {
-                return Unauthorized("E-mail ou senha incorretos.");
-            }
-
-            // Verifica se a senha informada bate com a hash salva no banco
-            bool senhaValida = BCrypt.Net.BCrypt.Verify(dto.Senha, estudante.SenhaHash);
-            if (!senhaValida)
-            {
-                return Unauthorized("E-mail ou senha incorretos.");
-            }
-
-            // Retorna os dados essenciais para o gerenciamento da sessão no frontend
-            return Ok(new
-            {
-                mensagem = "Login efetuado com sucesso!",
-                estudanteId = estudante.Id,
-                nome = estudante.Nome
-            });
-        }
+        return Ok(new { token = tokenHandler.WriteToken(token), estudanteId = estudante.Id });
     }
 }
