@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudyTrackerApp.Models;
-using System.Security.Claims;
 
 namespace StudyTrackerApp.Controllers
 {
@@ -15,7 +14,7 @@ namespace StudyTrackerApp.Controllers
 
         public TarefasController(AppDbContext context) => _context = context;
 
-        // Método auxiliar para obter o ID do token do usuário logado
+        // Método auxiliar para garantir segurança e isolamento por estudante
         private int GetEstudanteId() => int.Parse(User.FindFirst("id")?.Value ?? "0");
 
         // GET: api/Tarefas
@@ -30,33 +29,6 @@ namespace StudyTrackerApp.Controllers
             return await query.ToListAsync();
         }
 
-        // GET: api/Tarefas/alertas
-        [HttpGet("alertas")]
-        public async Task<ActionResult<IEnumerable<Tarefa>>> GetAlertas()
-        {
-            var estudanteId = GetEstudanteId();
-            var dataLimite = DateTime.Today.AddDays(3);
-
-            return await _context.Tarefas.AsNoTracking()
-                .Where(t => t.EstudanteId == estudanteId && t.Data <= dataLimite && !t.Concluida)
-                .OrderBy(t => t.Data)
-                .ToListAsync();
-        }
-
-        // GET: api/Tarefas/calendario
-        [HttpGet("calendario")]
-        public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefasCalendario([FromQuery] int ano, [FromQuery] int mes)
-        {
-            var estudanteId = GetEstudanteId();
-            var dataInicio = new DateTime(ano, mes, 1);
-            var dataFim = dataInicio.AddMonths(1).AddDays(-1);
-
-            return await _context.Tarefas.AsNoTracking()
-                .Where(t => t.EstudanteId == estudanteId && t.Data >= dataInicio && t.Data <= dataFim)
-                .OrderBy(t => t.Data)
-                .ToListAsync();
-        }
-
         // GET: api/Tarefas/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Tarefa>> GetTarefa(int id)
@@ -65,7 +37,7 @@ namespace StudyTrackerApp.Controllers
             var tarefa = await _context.Tarefas.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == id && t.EstudanteId == estudanteId);
 
-            if (tarefa == null) return NotFound("Tarefa não encontrada ou não pertence a este usuário.");
+            if (tarefa == null) return NotFound("Tarefa não encontrada.");
 
             return tarefa;
         }
@@ -78,7 +50,8 @@ namespace StudyTrackerApp.Controllers
             _context.Tarefas.Add(tarefa);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTarefa", new { id = tarefa.Id }, tarefa);
+            // Usamos a string "GetTarefa" para referenciar o método GET acima
+            return CreatedAtAction(nameof(GetTarefa), new { id = tarefa.Id }, tarefa);
         }
 
         // PUT: api/Tarefas/5
@@ -97,7 +70,7 @@ namespace StudyTrackerApp.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Tarefas.Any(t => t.Id == id)) return NotFound("Tarefa não encontrada.");
+                if (!_context.Tarefas.Any(t => t.Id == id)) return NotFound();
                 else throw;
             }
 

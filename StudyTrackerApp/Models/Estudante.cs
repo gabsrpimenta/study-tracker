@@ -4,7 +4,7 @@ namespace StudyTrackerApp.Models
 {
     public class Estudante
     {
-        // Identificação única no banco de dados
+        // Identificação única na Base de dados
         [Key]
         public int Id { get; set; }
 
