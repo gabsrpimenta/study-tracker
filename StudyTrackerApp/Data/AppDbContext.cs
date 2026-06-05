@@ -2,6 +2,7 @@
 
 namespace StudyTrackerApp.Models
 {
+    // O DbContext é a ponte principal entre o código C# e o banco de dados (o coração do EF Core)
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -13,19 +14,19 @@ namespace StudyTrackerApp.Models
         public DbSet<Cronograma> Cronogramas { get; set; }
         public DbSet<Pomodoro> Pomodoros { get; set; }
 
-        // O método OnModelCreating permite configurar o comportamento do banco de dados
-        // via "Fluent API", que é uma forma mais poderosa e flexível que apenas Data Annotations.
+        // O OnModelCreating é usado para configurar relacionamentos e comportamentos complexos
+        // que as Data Annotations simples não conseguem resolver sozinhas.
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Exemplo de configuração: garantir que o nome da tabela no banco seja pluralizado corretamente
-            // e configurar comportamentos de deleção (Cascade Delete)
-
+            // Regra de integridade referencial: 
+            // Impedimos que o banco delete automaticamente uma Matéria se existirem Pomodoros vinculados a ela.
+            // Isso evita a perda de histórico de estudos por erro de exclusão.
             modelBuilder.Entity<Pomodoro>()
                 .HasOne(p => p.Materia)
                 .WithMany()
-                .OnDelete(DeleteBehavior.Restrict); // Evita exclusão acidental em cascata de matérias
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

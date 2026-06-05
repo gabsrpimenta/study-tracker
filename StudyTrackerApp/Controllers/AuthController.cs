@@ -17,25 +17,24 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        // Busca o estudante pelo e-mail informado
+        // Busca o estudante pelo e-mail
         var estudante = await _context.Estudantes.FirstOrDefaultAsync(e => e.Email == dto.Email);
 
-        // Verificação de segurança: O uso de BCrypt.Verify protege contra ataques de força bruta,
-        // comparando a senha digitada com o Hash armazenado (nunca guardamos senhas em texto puro).
+        // Valida se o usuário existe e se a senha bate (BCrypt cuida da comparação do Hash)
         if (estudante == null || !BCrypt.Net.BCrypt.Verify(dto.Senha, estudante.SenhaHash))
             return Unauthorized(new { message = "E-mail ou senha incorretos." });
 
-        // Geração do Token JWT (JSON Web Token)
+        // Gera o token JWT para autenticar as próximas requisições
         var tokenHandler = new JwtSecurityTokenHandler();
 
-        // Em produção, esta chave deve vir do appsettings.json ou de um gerenciador de segredos (Key Vault)
+        // Dica: em produção, essa chave deveria vir das configurações do sistema (appsettings.json)
         var key = Encoding.UTF8.GetBytes("uma_chave_muito_longa_e_secreta_para_seguranca_12345");
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            // Claims são as "afirmações" ou dados incluídos dentro do token
+            // O ID do estudante vai dentro do token como uma "claim"
             Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, estudante.Id.ToString()) }),
-            Expires = DateTime.UtcNow.AddDays(7), // Token com validade de uma semana
+            Expires = DateTime.UtcNow.AddDays(7), // Token expira em 7 dias
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
