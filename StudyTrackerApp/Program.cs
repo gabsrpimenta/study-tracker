@@ -3,18 +3,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StudyTrackerApp.Models;
 using System.Text;
-using QuestPDF.Infrastructure; // Importante: Adicione este namespace
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuração do QuestPDF (Licença Community para uso gratuito/estudantil)
+// 1. Configurações de Serviços
 QuestPDF.Settings.License = LicenseType.Community;
 
-// Configuração do banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configuração do JWT
+// Configuração do CORS:
+// Adicionamos a origem do seu frontend e permitimos todos os métodos
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowReact", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -26,21 +34,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowReact", policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-});
-
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) { app.MapOpenApi(); }
+// 2. Configuração do Pipeline (Ordem é fundamental)
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
+// O CORS deve ser o primeiro middleware a processar a requisição
 app.UseCors("AllowReact");
+
+// COMENTAMOS O REDIRECIONAMENTO PARA TESTAR
+// Se isso resolver o problema, é sinal de que o HTTPS estava bloqueando o preflight
+// app.UseHttpsRedirection(); 
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

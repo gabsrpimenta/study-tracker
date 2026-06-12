@@ -27,7 +27,7 @@ namespace StudyTrackerApp.Models
         public int MateriaId { get; set; }
         public Materia? Materia { get; set; }
 
-        // Relacionamento: Identifica quem realizou a sessão
+        // Identifica o estudante
         [Required(ErrorMessage = "O estudante é obrigatório.")]
         public int EstudanteId { get; set; }
         public Estudante? Estudante { get; set; }
