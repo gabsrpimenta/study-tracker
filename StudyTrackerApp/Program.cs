@@ -13,8 +13,6 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configuração do CORS:
-// Adicionamos a origem do seu frontend e permitimos todos os métodos
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReact", policy =>
         policy.WithOrigins("http://localhost:5173")
@@ -39,23 +37,20 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 2. Configuração do Pipeline (Ordem é fundamental)
-
+// 2. Configuração do Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    // Apenas redireciona para HTTPS se não estiver em desenvolvimento
+    app.UseHttpsRedirection();
+}
 
-// O CORS deve ser o primeiro middleware a processar a requisição
 app.UseCors("AllowReact");
-
-// COMENTAMOS O REDIRECIONAMENTO PARA TESTAR
-// Se isso resolver o problema, é sinal de que o HTTPS estava bloqueando o preflight
-// app.UseHttpsRedirection(); 
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
