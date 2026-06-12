@@ -46,4 +46,23 @@ public class AuthController : ControllerBase
             message = "Login realizado com sucesso."
         });
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    {
+        if (await _context.Estudantes.AnyAsync(e => e.Email == dto.Email))
+            return BadRequest(new { message = "Email já cadastrado." });
+
+        var estudante = new Estudante
+        {
+            Nome = dto.Nome,
+            Email = dto.Email,
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha)
+        };
+
+        _context.Estudantes.Add(estudante);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Cadastro realizado com sucesso." });
+    }
 }
