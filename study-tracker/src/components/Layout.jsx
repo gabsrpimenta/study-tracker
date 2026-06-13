@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, Link } from "react-router-dom";
+import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, BookOpen, Settings, GraduationCap,
   ListTodo, Timer, FileText, Award, BarChart3, CalendarDays, Target,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
+import { getUser, logout } from "@/lib/auth";
 
 const sections = [
   {
@@ -43,6 +44,17 @@ const sections = [
 export default function Layout() {
   const [open, setOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
+  const user = getUser();
+  const initials = user?.nome
+    ? user.nome.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
+    : "?";
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -105,7 +117,13 @@ export default function Layout() {
               <Bell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
             </button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">GA</div>
+            <button
+              onClick={handleLogout}
+              title={`${user?.nome ?? ""} — clica para sair`}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-80"
+            >
+              {initials}
+            </button>
           </div>
         </header>
 

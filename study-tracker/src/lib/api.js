@@ -1,9 +1,10 @@
-// Camada de "API" do Study Tracker em JavaScript puro.
-// Persiste em localStorage. Para ligar a uma API real, basta substituir
-// o corpo das funções abaixo por chamadas fetch.
+// Camada de "API" do Study Tracker.
+// Subjects (Disciplinas) ligados ao backend C#/.NET via authFetch.
+// As restantes entidades continuam em localStorage por agora.
+
+import { authFetch } from "@/lib/auth";
 
 const K = {
-  subjects: "st.subjects",
   events: "st.events",
   tasks: "st.tasks",
   notes: "st.notes",
@@ -12,13 +13,6 @@ const K = {
   schedule: "st.schedule",
   goals: "st.goals",
 };
-
-const seedSubjects = [
-  { id: "s1", name: "Matemática", teacher: "Prof. Silva", progress: 75, tasks: 12 },
-  { id: "s2", name: "Programação", teacher: "Prof. Costa", progress: 60, tasks: 8 },
-  { id: "s3", name: "História", teacher: "Prof. Mendes", progress: 40, tasks: 5 },
-  { id: "s4", name: "Inglês", teacher: "Prof. Lopes", progress: 85, tasks: 15 },
-];
 
 const seedEvents = [
   { id: "e1", name: "Teste de Matemática", subject: "Álgebra", date: "25/Mai", type: "Teste" },
@@ -120,7 +114,56 @@ function makeCrud(key, seed) {
   };
 }
 
-const subjects = makeCrud(K.subjects, seedSubjects);
+// ---------------- SUBJECTS (Disciplinas) -> Backend C#/.NET ----------------
+
+function toFrontend(m) {
+  return {
+    id: m.id ?? m.Id,
+    name: m.nome ?? m.Nome,
+    teacher: m.professor ?? m.Professor,
+    progress: m.progresso ?? m.Progresso,
+    tasks: m.numTarefas ?? m.NumTarefas,
+  };
+}
+function toBackend(s) {
+  return {
+    nome: s.name,
+    professor: s.teacher,
+    progresso: s.progress,
+    numTarefas: s.tasks,
+    ativa: true,
+  };
+}
+
+export async function listSubjects() {
+  const res = await authFetch("/Materias");
+  const data = await res.json();
+  return data.map(toFrontend);
+}
+
+export async function createSubject(s) {
+  const res = await authFetch("/Materias", {
+    method: "POST",
+    body: JSON.stringify(toBackend(s)),
+  });
+  const data = await res.json();
+  return toFrontend(data);
+}
+
+export async function updateSubject(id, s) {
+  await authFetch(`/Materias/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ id, ...toBackend(s) }),
+  });
+  return { id, ...s };
+}
+
+export async function deleteSubject(id) {
+  await authFetch(`/Materias/${id}`, { method: "DELETE" });
+}
+
+// ---------------- Restantes entidades (ainda em localStorage) ----------------
+
 const events = makeCrud(K.events, seedEvents);
 const tasks = makeCrud(K.tasks, seedTasks);
 const notes = makeCrud(K.notes, seedNotes);
@@ -129,10 +172,6 @@ const sessions = makeCrud(K.sessions, seedSessions);
 const schedule = makeCrud(K.schedule, seedSchedule);
 const goals = makeCrud(K.goals, seedGoals);
 
-export const listSubjects = subjects.list;
-export const createSubject = subjects.create;
-export const updateSubject = subjects.update;
-export const deleteSubject = subjects.remove;
 export const listEvents = events.list;
 export const createEvent = events.create;
 export const updateEvent = events.update;

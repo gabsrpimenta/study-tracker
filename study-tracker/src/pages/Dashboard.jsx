@@ -3,6 +3,7 @@ import { Sparkles, Flame, Clock, CheckSquare, BookOpen, Timer, Check } from "luc
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Progress, Badge } from "@/components/ui/Primitives";
 import { listSessions, listTasks, updateTask, listSubjects, listEvents } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 
 const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const prio = {
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [events, setEvents] = useState([]);
+  const user = getUser();
 
   useEffect(() => {
     Promise.all([listSessions(), listTasks(), listSubjects(), listEvents()]).then(([s, t, sj, e]) => {
@@ -59,7 +61,7 @@ export default function Dashboard() {
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
               <Sparkles className="h-3 w-3" /> Foco do dia
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{greeting}, Gabriella!</h1>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{greeting}{user?.nome ? `, ${user.nome}` : ""}!</h1>
             <p className="mt-1 max-w-xl text-sm text-primary-foreground/80 md:text-base">
               Pequenos passos consistentes constroem grandes conquistas. Vamos lá.
             </p>
