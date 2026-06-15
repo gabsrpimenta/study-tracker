@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, BookOpen, Settings, GraduationCap,
   ListTodo, Timer, FileText, Award, BarChart3, CalendarDays, Target,
-  Menu, Moon, Sun, Bell,
+  Menu, Moon, Sun, Bell, LogOut, // Adicionado LogOut aqui
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ const sections = [
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false); // Novo estado para controlar o menu do usuário
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -117,13 +118,59 @@ export default function Layout() {
               <Bell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
             </button>
-            <button
-              onClick={handleLogout}
-              title={`${user?.nome ?? ""} — clica para sair`}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-80"
-            >
-              {initials}
-            </button>
+            
+            {/* Menu Dropdown do Usuário */}
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                title="Menu do usuário"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-80 focus:outline-none"
+              >
+                {initials}
+              </button>
+
+              {userMenuOpen && (
+                <>
+                  {/* Camada invisível de fundo para fechar o menu se clicar fora */}
+                  <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
+                  
+                  {/* Caixa do Menu */}
+                  <div className="absolute right-0 mt-2 w-52 origin-top-right rounded-md border bg-card p-1 shadow-lg z-40">
+                    {/* Identificação do Usuário */}
+                    <div className="px-3 py-2 border-b mb-1">
+                      <p className="text-xs font-semibold text-foreground truncate">{user?.nome ?? "Usuário"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">Estudante</p>
+                    </div>
+                    
+                    {/* Opção Configurações */}
+                    <Link
+                      to="/configuracoes"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground/80 hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Configurações
+                    </Link>
+
+                    {/* Divisor */}
+                    <div className="my-1 border-t" />
+
+                    {/* Opção Sair */}
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair da conta
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         </header>
 
