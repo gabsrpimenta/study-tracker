@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Calendar, BookOpen, Settings, GraduationCap,
+  LayoutDashboard, Calendar, BookOpen, GraduationCap,
   ListTodo, Timer, FileText, Award, BarChart3, CalendarDays, Target,
-  Menu, Moon, Sun, Bell, LogOut, // Adicionado LogOut aqui
+  Menu, Moon, Sun, Bell, LogOut,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,6 @@ const sections = [
     label: "Produtividade",
     items: [
       { to: "/tarefas", icon: ListTodo, label: "Tarefas" },
-      { to: "/pomodoro", icon: Timer, label: "Pomodoro" },
       { to: "/notas", icon: FileText, label: "Notas" },
       { to: "/objetivos", icon: Target, label: "Objetivos" },
     ],
@@ -35,15 +34,11 @@ const sections = [
       { to: "/estatisticas", icon: BarChart3, label: "Estatísticas" },
     ],
   },
-  {
-    label: "Sistema",
-    items: [{ to: "/configuracoes", icon: Settings, label: "Configurações" }],
-  },
 ];
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false); // Novo estado para controlar o menu do usuário
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -131,31 +126,14 @@ export default function Layout() {
 
               {userMenuOpen && (
                 <>
-                  {/* Camada invisível de fundo para fechar o menu se clicar fora */}
                   <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
                   
-                  {/* Caixa do Menu */}
                   <div className="absolute right-0 mt-2 w-52 origin-top-right rounded-md border bg-card p-1 shadow-lg z-40">
-                    {/* Identificação do Usuário */}
                     <div className="px-3 py-2 border-b mb-1">
                       <p className="text-xs font-semibold text-foreground truncate">{user?.nome ?? "Usuário"}</p>
                       <p className="text-[10px] text-muted-foreground truncate">Estudante</p>
                     </div>
                     
-                    {/* Opção Configurações */}
-                    <Link
-                      to="/configuracoes"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground/80 hover:bg-accent hover:text-foreground transition-colors"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Configurações
-                    </Link>
-
-                    {/* Divisor */}
-                    <div className="my-1 border-t" />
-
-                    {/* Opção Sair */}
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);

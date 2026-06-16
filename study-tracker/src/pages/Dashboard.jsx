@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Flame, Clock, CheckSquare, BookOpen, Timer, Check, Award, Palette, Music, Crown } from "lucide-react";
+import { Sparkles, Flame, Clock, CheckSquare, BookOpen, Timer, Check, Award, Palette, Crown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Progress, Badge } from "@/components/ui/Primitives";
 import { listSessions, listTasks, updateTask, listSubjects, listEvents } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { toast } from "sonner";
 
 const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const prio = {
@@ -25,19 +26,9 @@ export default function Dashboard() {
   
   const [streak, setStreak] = useState(0);
   const [award, setAward] = useState("Foco Inicial");
-  const [userProfile, setUserProfile] = useState({ name: "Gabriella Pimenta", avatarUrl: "" });
+  const [userProfile, setUserProfile] = useState({ name: "Gabriella Pimenta" });
   
   const user = getUser();
-
-  // Função dinâmica para extrair as iniciais de qualquer nome inserido
-  const obterIniciais = (nome) => {
-    if (!nome) return "?";
-    const partes = nome.trim().split(/\s+/);
-    if (partes.length >= 2) {
-      return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
-    }
-    return partes[0].substring(0, 2).toUpperCase();
-  };
 
   useEffect(() => {
     Promise.all([listSessions(), listTasks(), listSubjects(), listEvents()]).then(([s, t, sj, e]) => {
@@ -64,6 +55,7 @@ export default function Dashboard() {
       }
     }
 
+    // Configurado estritamente com a sequência dinâmica real
     setStreak(sequenciaAtual);
     
     if (sequenciaAtual >= 30) setAward("Mestre do Foco");
@@ -78,8 +70,7 @@ export default function Dashboard() {
     const savedSettings = JSON.parse(localStorage.getItem("user_settings"));
     if (savedSettings) {
       setUserProfile({
-        name: savedSettings.name || user?.nome || "Gabriella Pimenta",
-        avatarUrl: savedSettings.avatarUrl || ""
+        name: savedSettings.name || user?.nome || "Gabriella Pimenta"
       });
     } else if (user?.nome) {
       setUserProfile((prev) => ({ ...prev, name: user.nome }));
@@ -91,18 +82,22 @@ export default function Dashboard() {
     setTasks((p) => p.map((x) => (x.id === t.id ? u : x)));
   }
 
-  const obterEstiloAvatar = (dias) => {
-    if (dias >= 30) return { borda: "border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse", medalha: "💎" };
-    if (dias >= 14) return { borda: "border-amber-400 shadow-md", medalha: "🥇" };
-    if (dias >= 7) return { borda: "border-slate-300 shadow-sm", medalha: "🥈" };
-    if (dias >= 3) return { borda: "border-amber-700", medalha: "🥉" };
-    return { borda: "border-white/20 bg-white/10", medalha: null };
-  };
-
-  const estiloAvatar = obterEstiloAvatar(streak);
-  
-  // Extração em tempo real das iniciais corretas de quem está logado/configurado
-  const iniciaisAvatar = obterIniciais(userProfile.name); 
+  // Função de Interação com os Temas Premium
+  function alterarTema(nomeTema, diasNecessarios) {
+    if (streak < diasNecessarios) {
+      toast.error(`Precisas de uma sequência de ${diasNecessarios} dias para desbloquear este visual!`);
+      return;
+    }
+    
+    document.documentElement.classList.remove("theme-midnight", "theme-nordic", "theme-cyberpunk");
+    
+    if (nomeTema !== "default") {
+      document.documentElement.classList.add(`theme-${nomeTema}`);
+    }
+    
+    localStorage.setItem("app_theme", nomeTema);
+    toast.success(`Visual ${nomeTema.charAt(0).toUpperCase() + nomeTema.slice(1)} ativado com sucesso! ✨`);
+  }
 
   const now = new Date();
   const weekly = Array.from({ length: 7 }, (_, idx) => {
@@ -125,45 +120,27 @@ export default function Dashboard() {
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-12 -left-8 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
         
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            
-            {/* Avatar Grande Totalmente Dinâmico */}
-            <div className="relative inline-block select-none shrink-0">
-              <div className={`flex h-16 w-16 items-center justify-center rounded-full font-bold text-xl text-white border-2 transition-all duration-500 overflow-hidden ${estiloAvatar.borda}`}>
-                {userProfile.avatarUrl ? (
-                  <img src={userProfile.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                ) : (
-                  <span>{iniciaisAvatar}</span>
-                )}
-              </div>
-              {estiloAvatar.medalha && (
-                <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-card text-xs shadow border border-border">
-                  {estiloAvatar.medalha}
-                </div>
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex-1 space-y-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
+              <Sparkles className="h-3 w-3" /> Foco do dia
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+              {greeting}, {userProfile.name.split(" ")[0]}!
+            </h1>
+            <p className="max-w-xl text-sm text-primary-foreground/90 md:text-base font-medium leading-relaxed">
+              {streak >= 20 ? (
+                <span className="text-white drop-shadow-sm">⚡ Ninguém te consegue parar. Continua o legado!</span>
+              ) : streak >= 7 ? (
+                <span className="text-white/95">🚀 É um orgulho ver a tua consistência esta semana! Vamos a isto.</span>
+              ) : (
+                "Pequenos passos consistentes constroem grandes conquistas. Vamos lá."
               )}
-            </div>
-
-            <div>
-              <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
-                <Sparkles className="h-3 w-3" /> Foco do dia
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{greeting}, {userProfile.name.split(" ")[0]}!</h1>
-              
-              <p className="mt-1 max-w-xl text-sm text-primary-foreground/90 md:text-base font-medium">
-                {streak >= 20 ? (
-                  <span className="text-white drop-shadow-sm">⚡ Ninguém te consegue parar. Continua o legado!</span>
-                ) : streak >= 7 ? (
-                  <span className="text-white/95">🚀 É um orgulho ver a tua consistência esta semana! Vamos a isto.</span>
-                ) : (
-                  "Pequenos passos consistentes constroem grandes conquistas. Vamos lá."
-                )}
-              </p>
-            </div>
+            </p>
           </div>
 
           {/* Widget da Sequência */}
-          <div className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 backdrop-blur min-w-[160px] border border-white/10 transition-all hover:bg-white/15 self-start md:self-auto">
+          <div className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 backdrop-blur min-w-[170px] border border-white/10 transition-all hover:bg-white/15 self-start md:self-auto shrink-0">
             <div className="relative">
               <Flame className="h-8 w-8 text-warning fill-warning animate-pulse" />
             </div>
@@ -178,7 +155,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Resto do Dashboard mantido perfeitamente... */}
+      {/* Grid de Estatísticas Rápidas */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Próximos prazos", value: events.length, icon: Clock, tone: "bg-primary/10 text-primary" },
@@ -200,24 +177,32 @@ export default function Dashboard() {
         ))}
       </section>
 
+      {/* Secção de Benefícios Premium - Apenas com Temas Visuais */}
       <section className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm text-sm">
         <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground border-r pr-3 h-5 mr-1">
           <Crown className="h-3.5 w-3.5 text-primary" /> Benefícios Premium
         </div>
-        <Badge variant={streak >= 7 ? "default" : "secondary"} className="gap-1 px-2.5 py-1 text-xs font-medium">
-          <Palette className="h-3 w-3" /> Midnight Gold {streak >= 7 ? "🔓" : "🔒 (7d)"}
-        </Badge>
-        <Badge variant={streak >= 15 ? "default" : "secondary"} className="gap-1 px-2.5 py-1 text-xs font-medium">
-          <Palette className="h-3 w-3" /> Nordic Mint {streak >= 15 ? "🔓" : "🔒 (15d)"}
-        </Badge>
-        <Badge variant={streak >= 30 ? "default" : "secondary"} className="gap-1 px-2.5 py-1 text-xs font-medium">
-          <Palette className="h-3 w-3" /> Cyberpunk Stealth {streak >= 30 ? "🔓" : "🔒 (30d)"}
-        </Badge>
-        <Badge variant={streak >= 5 ? "default" : "secondary"} className="gap-1 px-2.5 py-1 text-xs font-medium">
-          <Music className="h-3 w-3" /> Sons Pomodoro {streak >= 5 ? "🔓 Desbloqueado" : "🔒 (5d)"}
-        </Badge>
+        
+        <button onClick={() => alterarTema("midnight", 7)} className="transition-transform active:scale-95 focus:outline-none">
+          <Badge variant={streak >= 7 ? "default" : "secondary"} className={`gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer ${streak >= 7 ? "hover:brightness-110" : "opacity-50"}`}>
+            <Palette className="h-3 w-3" /> Midnight Gold {streak >= 7 ? "🔓" : "🔒 (7d)"}
+          </Badge>
+        </button>
+
+        <button onClick={() => alterarTema("nordic", 15)} className="transition-transform active:scale-95 focus:outline-none">
+          <Badge variant={streak >= 15 ? "default" : "secondary"} className={`gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer ${streak >= 15 ? "hover:brightness-110" : "opacity-50"}`}>
+            <Palette className="h-3 w-3" /> Nordic Mint {streak >= 15 ? "🔓" : "🔒 (15d)"}
+          </Badge>
+        </button>
+
+        <button onClick={() => alterarTema("cyberpunk", 30)} className="transition-transform active:scale-95 focus:outline-none">
+          <Badge variant={streak >= 30 ? "default" : "secondary"} className={`gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer ${streak >= 30 ? "hover:brightness-110" : "opacity-50"}`}>
+            <Palette className="h-3 w-3" /> Cyberpunk Stealth {streak >= 30 ? "🔓" : "🔒 (30d)"}
+          </Badge>
+        </button>
       </section>
 
+      {/* Gráficos e Listagem de Tarefas */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>

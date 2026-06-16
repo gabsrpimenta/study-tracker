@@ -51,10 +51,73 @@
   --ring: 217 91% 65%;
 }
 
+/* ==========================================================================
+   TEMAS PREMIUM DESBLOQUEÁVEIS (Aplicações Dinâmicas por Sequência)
+   ========================================================================== */
+
+/* Tema 1: Midnight Gold (Sequência 7 Dias) - Escuro Luxuoso e Dourado */
+.theme-midnight {
+  --background: 240 10% 4%;
+  --foreground: 45 20% 96%;
+  --card: 240 10% 7%;
+  --card-foreground: 45 20% 96%;
+  --primary: 43 96% 56%; /* Ouro Puro */
+  --primary-foreground: 240 10% 4%;
+  --secondary: 240 6% 13%;
+  --secondary-foreground: 45 20% 96%;
+  --muted: 240 6% 13%;
+  --muted-foreground: 40 5% 65%;
+  --accent: 43 96% 15%;
+  --accent-foreground: 43 96% 56%;
+  --border: 240 6% 15%;
+  --input: 240 6% 15%;
+  --ring: 43 96% 56%;
+}
+
+/* Tema 2: Nordic Mint (Sequência 15 Dias) - Polar minimalista com Verde Menta */
+.theme-nordic {
+  --background: 215 28% 8%;
+  --foreground: 170 30% 96%;
+  --card: 215 25% 12%;
+  --card-foreground: 170 30% 96%;
+  --primary: 160 84% 45%; /* Verde Menta Glacial */
+  --primary-foreground: 215 28% 8%;
+  --secondary: 215 20% 17%;
+  --secondary-foreground: 170 30% 96%;
+  --muted: 215 20% 17%;
+  --muted-foreground: 170 10% 65%;
+  --accent: 160 84% 12%;
+  --accent-foreground: 160 84% 45%;
+  --border: 215 20% 20%;
+  --input: 215 20% 20%;
+  --ring: 160 84% 45%;
+}
+
+/* Tema 3: Cyberpunk Stealth (Sequência 30 Dias) - Fundo Puro Profundo com Neon Fúcsia */
+.theme-cyberpunk {
+  --background: 260 30% 3%;
+  --foreground: 180 100% 95%;
+  --card: 260 25% 7%;
+  --card-foreground: 180 100% 95%;
+  --primary: 325 100% 55%; /* Neon Fuchsia */
+  --primary-foreground: 260 30% 3%;
+  --secondary: 260 20% 14%;
+  --secondary-foreground: 180 100% 95%;
+  --muted: 260 20% 14%;
+  --muted-foreground: 255 10% 60%;
+  --accent: 180 100% 10%; /* Ciano Neon no Accent */
+  --accent-foreground: 180 100% 50%;
+  --border: 260 20% 16%;
+  --input: 260 20% 16%;
+  --ring: 325 100% 55%;
+}
+
+/* Configurações Globais Adicionais */
 * { border-color: hsl(var(--border)); }
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Transição suave ao alterar de tema */
 }
