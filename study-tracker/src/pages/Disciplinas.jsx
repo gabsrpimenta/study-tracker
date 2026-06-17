@@ -8,7 +8,8 @@ import { Progress, Badge } from "@/components/ui/Primitives";
 import { Dialog } from "@/components/ui/Dialog";
 import { listSubjects, createSubject, updateSubject, deleteSubject } from "@/lib/api";
 
-const empty = { name: "", teacher: "", progress: 0, tasks: 0 };
+// 1. SINCRONIZADO COM O C#: Variáveis agora usam os nomes do backend (nome, professor, progresso, tarefas)
+const empty = { nome: "", professor: "", progresso: 0, tarefas: 0 };
 
 export default function Disciplinas() {
   const [items, setItems] = useState([]);
@@ -29,39 +30,52 @@ export default function Disciplinas() {
   
   function startEdit(s) { 
     setEditing(s); 
-    setForm({ name: s.name, teacher: s.teacher, progress: s.progress, tasks: s.tasks }); 
+    setForm({ 
+      nome: s.nome || "", 
+      professor: s.professor || "", 
+      progresso: s.progresso || 0, 
+      tarefas: s.tarefas || 0 
+    }); 
     setOpen(true); 
   }
 
   async function save() {
-    if (!form.name.trim()) { toast.error("Nome obrigatório"); return; }
-    if (editing) {
-      const u = await updateSubject(editing.id, form);
-      setItems((p) => p.map((x) => (x.id === editing.id ? u : x)));
-    } else {
-      const c = await createSubject(form);
-      setItems((p) => [c, ...p]);
+    if (!form.nome.trim()) { toast.error("Nome obrigatório"); return; }
+    
+    try {
+      if (editing) {
+        const u = await updateSubject(editing.id, form);
+        setItems((p) => p.map((x) => (x.id === editing.id ? { ...x, ...form, ...u } : x)));
+      } else {
+        const c = await createSubject(form);
+        setItems((p) => [{ id: c?.id || Date.now().toString(), ...form, ...c }, ...p]);
+      }
+      setOpen(false);
+      toast.success("Guardado com sucesso.");
+    } catch (error) {
+      toast.error("Erro ao guardar a disciplina.");
+      console.error(error);
     }
-    setOpen(false);
-    toast.success("Guardado com sucesso.");
   }
 
   async function confirmDelete() {
-    await deleteSubject(del);
-    setItems((p) => p.filter((x) => x.id !== del));
-    setDel(null);
-    toast.success("Disciplina removida.");
+    try {
+      await deleteSubject(del);
+      setItems((p) => p.filter((x) => x.id !== del));
+      setDel(null);
+      toast.success("Disciplina removida.");
+    } catch (error) {
+      toast.error("Erro ao remover a disciplina.");
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Disciplinas</h1>
           <p className="text-sm text-muted-foreground mt-1">Gerencie as suas disciplinas ativas e acompanhe o progresso do semestre.</p>
         </div>
-        {/* O botão do topo só aparece se já existirem disciplinas */}
         {items.length > 0 && (
           <Button onClick={startCreate} className="flex items-center gap-2 h-10 px-4 rounded-xl font-medium self-start sm:self-auto">
             <Plus className="h-4 w-4" /> Nova disciplina
@@ -69,7 +83,6 @@ export default function Disciplinas() {
         )}
       </div>
 
-      {/* Conteúdo Principal */}
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center p-16 border border-dashed border-border rounded-2xl bg-card/30 min-h-[350px]">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/60 text-muted-foreground/80 mb-4">
@@ -93,9 +106,9 @@ export default function Disciplinas() {
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <CardTitle className="text-base font-bold truncate">{s.name}</CardTitle>
+                    <CardTitle className="text-base font-bold truncate">{s.nome}</CardTitle>
                     <CardDescription className="flex items-center gap-1 text-xs truncate mt-0.5">
-                      <GraduationCap className="h-3 w-3 shrink-0" /> {s.teacher || "Sem professor atribuído"}
+                      <GraduationCap className="h-3 w-3 shrink-0" /> {s.professor || "Sem professor atribuído"}
                     </CardDescription>
                   </div>
                 </div>
@@ -113,19 +126,19 @@ export default function Disciplinas() {
               <CardContent className="space-y-4 border-t pt-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estado do Trabalho</span>
-                  <Badge variant={s.tasks > 0 ? "secondary" : "outline"} className="text-xs px-2 py-0.5 rounded-md font-medium">
-                    {s.tasks} {s.tasks === 1 ? "tarefa pendente" : "tarefas pendentes"}
+                  <Badge variant={s.tarefas > 0 ? "secondary" : "outline"} className="text-xs px-2 py-0.5 rounded-md font-medium">
+                    {s.tarefas || 0} {(s.tarefas === 1) ? "tarefa pendente" : "tarefas pendentes"}
                   </Badge>
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-sm">
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      {s.progress === 100 && <CheckCircle2 className="h-3 w-3 text-success" />} Progresso de Conclusão
+                      {(s.progresso || 0) >= 100 && <CheckCircle2 className="h-3 w-3 text-success" />} Progresso de Conclusão
                     </span>
-                    <span className="font-semibold text-foreground text-xs">{s.progress}%</span>
+                    <span className="font-semibold text-foreground text-xs">{s.progresso || 0}%</span>
                   </div>
-                  <Progress value={s.progress} className="h-2" />
+                  <Progress value={s.progresso || 0} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -145,28 +158,40 @@ export default function Disciplinas() {
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nome da Disciplina</Label>
-            <Input className="h-10 rounded-lg focus:ring-1 focus:ring-primary" placeholder="Ex: Engenharia de Software" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input className="h-10 rounded-lg focus:ring-1 focus:ring-primary" placeholder="Ex: Engenharia de Software" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
           </div>
           
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Professor / Regente</Label>
-            <Input className="h-10 rounded-lg focus:ring-1 focus:ring-primary" placeholder="Ex: Dr. Artur Silva" value={form.teacher} onChange={(e) => setForm({ ...form, teacher: e.target.value })} />
+            <Input className="h-10 rounded-lg focus:ring-1 focus:ring-primary" placeholder="Ex: Dr. Artur Silva" value={form.professor} onChange={(e) => setForm({ ...form, professor: e.target.value })} />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Progresso (%)</Label>
-              <Input type="number" min={0} max={100} className="h-10 rounded-lg focus:ring-1 focus:ring-primary" value={form.progress} onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })} />
+              <Input 
+                type="number" 
+                min={0} 
+                max={100} 
+                className="h-10 rounded-lg focus:ring-1 focus:ring-primary" 
+                value={form.progresso === 0 && form.progresso.toString() === "" ? "" : form.progresso} 
+                onChange={(e) => setForm({ ...form, progresso: Number(e.target.value) })} 
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nº de Tarefas</Label>
-              <Input type="number" min={0} className="h-10 rounded-lg focus:ring-1 focus:ring-primary" value={form.tasks} onChange={(e) => setForm({ ...form, tasks: Number(e.target.value) })} />
+              <Input 
+                type="number" 
+                min={0} 
+                className="h-10 rounded-lg focus:ring-1 focus:ring-primary" 
+                value={form.tarefas === 0 && form.tarefas.toString() === "" ? "" : form.tarefas} 
+                onChange={(e) => setForm({ ...form, tarefas: Number(e.target.value) })} 
+              />
             </div>
           </div>
         </div>
       </Dialog>
 
-      {/* Dialog Confirmação de Eliminação */}
       <Dialog
         open={!!del} onClose={() => setDel(null)}
         title="Eliminar disciplina?" 
