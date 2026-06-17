@@ -24,5 +24,9 @@ namespace StudyTrackerApp.Models
         [Required]
         public int EstudanteId { get; set; }
         public Estudante? Estudante { get; set; }
+        
+        // --- LIGAÇÃO COM A NOVA ENTIDADE DISCIPLINA ---
+        public int? DisciplinaId { get; set; }
+        public Disciplina? Disciplina { get; set; }
     }
 }

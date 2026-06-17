@@ -13,6 +13,8 @@ namespace StudyTrackerApp.Models
         public DbSet<Tarefa> Tarefas { get; set; }
         public DbSet<Cronograma> Cronogramas { get; set; }
         public DbSet<Pomodoro> Pomodoros { get; set; }
+        
+        public DbSet<Disciplina> Disciplinas { get; set; }
 
         // O OnModelCreating é usado para configurar relacionamentos e comportamentos complexos
         // que as Data Annotations simples não conseguem resolver sozinhas.
