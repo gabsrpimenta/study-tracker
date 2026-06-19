@@ -1,131 +1,88 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Target, CheckCircle2, Trophy, Edit3 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Primitives";
-import { Dialog, Select } from "@/components/ui/Dialog";
-import { listEvents, createEvent, updateEvent, deleteEvent } from "@/lib/api";
+import { Dialog } from "@/components/ui/Dialog";
+// Importa aqui a tua API de objetivos:
+// import { listGoals, createGoal, updateGoal, deleteGoal } from "@/lib/api";
 
-const typeStyles = {
-  Teste: "bg-destructive/10 text-destructive border-destructive/20 font-medium",
-  Entrega: "bg-warning/15 text-warning border-warning/30 font-medium",
-  Projeto: "bg-primary/10 text-primary border-primary/20 font-medium",
-};
-
-const empty = { name: "", subject: "", date: "", type: "Teste" };
-const monthsLabels = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-export default function Calendario() {
-  const [events, setEvents] = useState([]);
+export default function Objetivos() {
+  const [goals, setGoals] = useState([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(empty);
-  const [del, setDel] = useState(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [form, setForm] = useState({ title: "", description: "" });
 
-  useEffect(() => { listEvents().then(setEvents); }, []);
-
-  function handleDateChange(value) {
-    let rawValue = value.replace(/\D/g, "");
-    if (rawValue.length > 4) rawValue = rawValue.slice(0, 4);
-    let formattedValue = rawValue;
-    if (rawValue.length > 2) formattedValue = `${rawValue.slice(0, 2)}/${rawValue.slice(2)}`;
-    setForm({ ...form, date: formattedValue });
-  }
-
-  function handleDayClick(day) {
-    const dayStr = String(day).padStart(2, "0");
-    const monthStr = String(currentDate.getMonth() + 1).padStart(2, "0");
-    setEditing(null);
-    setForm({ ...empty, date: `${dayStr}/${monthStr}` });
-    setOpen(true);
-  }
+  // Exemplo de carga inicial
+  useEffect(() => {
+    // listGoals().then(setGoals);
+  }, []);
 
   async function save() {
-    if (!form.name.trim()) { toast.error("Nome obrigatório"); return; }
-    if (editing) {
-      const u = await updateEvent(editing.id, form);
-      setEvents((p) => p.map((x) => (x.id === editing.id ? u : x)));
-      toast.success("Evento atualizado.");
-    } else {
-      const c = await createEvent(form);
-      setEvents((p) => [c, ...p]);
-      toast.success("Evento criado.");
+    if (!form.title.trim()) {
+      toast.error("O título do objetivo é obrigatório");
+      return;
     }
+    // const newGoal = await createGoal(form);
+    // setGoals([...goals, newGoal]);
     setOpen(false);
+    toast.success("Objetivo definido com sucesso!");
   }
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const calendarCells = [...Array(new Date(year, month, 1).getDay()).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendário</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visualize os marcos importantes do seu semestre.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Objetivos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Define as tuas metas de longo prazo e mantém o foco.</p>
         </div>
-        <Button onClick={() => { setForm(empty); setOpen(true); }} className="rounded-xl h-10 px-5 gap-2">
-          <Plus className="h-4 w-4" /> Novo evento
+        <Button onClick={() => setOpen(true)} className="rounded-xl h-10 px-5 gap-2 font-medium">
+          <Plus className="h-4 w-4" /> Novo Objetivo
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 rounded-2xl border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-            <CardTitle className="text-base font-bold">{monthsLabels[month]} {year}</CardTitle>
-            <div className="flex border rounded-xl p-1 bg-background">
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setCurrentDate(new Date(year, month - 1))}><ChevronLeft className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setCurrentDate(new Date(year, month + 1))}><ChevronRight className="h-4 w-4" /></Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground pb-2">{daysOfWeek.map(d => <div key={d}>{d}</div>)}</div>
-            <div className="grid grid-cols-7 gap-2">
-              {calendarCells.map((day, i) => (
-                <div key={i} onClick={() => day && handleDayClick(day)} className={`min-h-[80px] rounded-xl border p-2 ${day ? "cursor-pointer hover:bg-muted/30" : "opacity-0"}`}>
-                  {day && <span className="text-xs font-bold">{day}</span>}
+      {/* Grid de Objetivos */}
+      {goals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center p-16 border border-dashed rounded-2xl bg-card/30 min-h-[350px]">
+          <Target className="h-10 w-10 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-bold">Nenhum objetivo definido</h3>
+          <p className="text-sm text-muted-foreground mt-2 max-w-xs">Define metas claras para o teu semestre e acompanha o teu progresso.</p>
+          <Button onClick={() => setOpen(true)} className="mt-6 rounded-xl">Criar primeiro objetivo</Button>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {goals.map((g) => (
+            <Card key={g.id} className="rounded-2xl border shadow-sm hover:border-primary/20 transition-all">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <Trophy className="h-5 w-5" />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Trash2 className="h-4 w-4" /></Button>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <CardTitle className="mt-2">{g.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{g.description}</CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-        <Card className="rounded-2xl border shadow-sm">
-          <CardHeader className="pb-3 border-b"><CardTitle className="text-base">Próximos Eventos</CardTitle></CardHeader>
-          <CardContent className="pt-4 space-y-3">
-            {events.length === 0 ? (
-              <div className="text-center py-10 px-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 mx-auto mb-3">
-                  <CalendarDays className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-medium text-foreground">Sem eventos agendados</p>
-                <p className="text-xs text-muted-foreground mt-1">Clique num dia para adicionar algo.</p>
-              </div>
-            ) : events.map(e => (
-              <div key={e.id} className="flex items-center justify-between p-3 rounded-xl border bg-card hover:border-primary/20 transition-all">
-                <div><p className="text-sm font-semibold">{e.name}</p><p className="text-xs text-muted-foreground">{e.date}</p></div>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => {setEditing(e); setForm(e); setOpen(true)}}><Pencil className="h-3.5 w-3.5" /></Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Dialog open={open} onClose={() => setOpen(false)} title={editing ? "Editar Evento" : "Novo Evento"} footer={
-        <><Button variant="outline" className="rounded-xl h-10" onClick={() => setOpen(false)}>Cancelar</Button>
-        <Button className="rounded-xl h-10 px-5" onClick={save}>Guardar Evento</Button></>
-      }>
+      {/* Dialog */}
+      <Dialog open={open} onClose={() => setOpen(false)} title="Novo Objetivo">
         <div className="space-y-4 py-2">
-          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase">Nome</Label><Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="rounded-lg" /></div>
-          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase">Disciplina</Label><Input value={form.subject} onChange={(e) => setForm({...form, subject: e.target.value})} className="rounded-lg" /></div>
-          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase">Data (DD/MM)</Label><Input value={form.date} maxLength={5} onChange={(e) => handleDateChange(e.target.value)} className="rounded-lg" /></div>
-          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase">Categoria</Label><Select value={form.type} onChange={(v) => setForm({...form, type: v})} options={[{value:"Teste", label:"Teste"}, {value:"Entrega", label:"Entrega"}, {value:"Projeto", label:"Projeto"}]} /></div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Título</Label>
+            <Input value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} placeholder="Ex: Terminar o curso com média 18" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Descrição</Label>
+            <Input value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} placeholder="Ex: Focar nas cadeiras de cálculo..." />
+          </div>
+          <Button className="w-full mt-4 rounded-xl" onClick={save}>Guardar Objetivo</Button>
         </div>
       </Dialog>
     </div>
