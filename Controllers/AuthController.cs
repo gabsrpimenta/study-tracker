@@ -6,44 +6,69 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
+namespace StudyTrackerApp.Controllers;
+
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
 
-    public AuthController(AppDbContext context) => _context = context;
-
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    public AuthController(AppDbContext context)
     {
-        // Busca o estudante pelo e-mail
-        var estudante = await _context.Estudantes.FirstOrDefaultAsync(e => e.Email == dto.Email);
+        _context = context;
+    }
 
-        // Valida se o usuário existe e se a senha bate (BCrypt cuida da comparação do Hash)
-        if (estudante == null || !BCrypt.Net.BCrypt.Verify(dto.Senha, estudante.SenhaHash))
-            return Unauthorized(new { message = "E-mail ou senha incorretos." });
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(RegisterDto dto)
+    {
+        if (await _context.Estudantes.AnyAsync(x => x.Email == dto.Email))
+            return BadRequest(new { message = "Email já existe" });
 
-        // Gera o token JWT para autenticar as próximas requisições
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        // Dica: em produção, essa chave deveria vir das configurações do sistema (appsettings.json)
-        var key = Encoding.UTF8.GetBytes("uma_chave_muito_longa_e_secreta_para_seguranca_12345");
-
-        var tokenDescriptor = new SecurityTokenDescriptor
+        var user = new Estudante
         {
-            // O ID do estudante vai dentro do token como uma "claim"
-            Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, estudante.Id.ToString()) }),
-            Expires = DateTime.UtcNow.AddDays(7), // Token expira em 7 dias
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            Nome = dto.Nome,
+            Email = dto.Email,
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha)
         };
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
+        _context.Estudantes.Add(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Conta criada" });
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        var user = await _context.Estudantes.FirstOrDefaultAsync(x => x.Email == dto.Email);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Senha, user.SenhaHash))
+            return Unauthorized(new { message = "Credenciais inválidas" });
+
+        var key = Encoding.UTF8.GetBytes("uma_chave_muito_longa_e_secreta_para_seguranca_12345");
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var token = tokenHandler.CreateToken(new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Nome)
+            }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256Signature
+            )
+        });
 
         return Ok(new
         {
             token = tokenHandler.WriteToken(token),
-            message = "Login realizado com sucesso."
+            nome = user.Nome,
+            id = user.Id
         });
     }
 }

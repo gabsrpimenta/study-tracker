@@ -2,116 +2,89 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudyTrackerApp.Models;
+using System.Security.Claims;
 
-namespace StudyTrackerApp.Controllers
+namespace StudyTrackerApp.Controllers;
+
+[Authorize]
+[Route("api/[controller]")]
+[ApiController]
+public class TarefasController : ControllerBase
 {
-    [Authorize] // Garante que só usuários logados tocam nesses dados
-    [Route("api/[controller]")]
-    [ApiController]
-    public class TarefasController : ControllerBase
+    private readonly AppDbContext _context;
+
+    public TarefasController(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public TarefasController(AppDbContext context) => _context = context;
+    private int GetUserId()
+        => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        // Pega o ID do usuário direto do token, sem confiar em parâmetros do cliente
-        private int GetEstudanteId() => int.Parse(User.FindFirst("id")?.Value ?? "0");
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var userId = GetUserId();
+        var data = await _context.Tarefas
+            .Where(t => t.EstudanteId == userId)
+            .ToListAsync();
+        return Ok(data);
+    }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Tarefa>>> GetTarefas([FromQuery] bool? concluida)
-        {
-            var estudanteId = GetEstudanteId();
+    [HttpPost]
+    public async Task<IActionResult> Post(Tarefa tarefa)
+    {
+        tarefa.EstudanteId = GetUserId();
+        _context.Tarefas.Add(tarefa);
+        await _context.SaveChangesAsync();
+        return Ok(tarefa);
+    }
 
-            // AsNoTracking: melhora a performance em consultas, já que não vamos editar nada aqui
-            var query = _context.Tarefas.AsNoTracking().Where(t => t.EstudanteId == estudanteId);
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put(int id, Tarefa input)
+    {
+        var userId = GetUserId();
+        var tarefa = await _context.Tarefas
+            .FirstOrDefaultAsync(x => x.Id == id && x.EstudanteId == userId);
 
-            if (concluida.HasValue) query = query.Where(t => t.Concluida == concluida.Value);
+        if (tarefa == null) return NotFound();
 
-            return await query.ToListAsync();
-        }
+        tarefa.Titulo = input.Titulo;
+        tarefa.Data = input.Data;
+        tarefa.Concluida = input.Concluida;
+        tarefa.Subject = input.Subject;
+        tarefa.Priority = input.Priority;
+        tarefa.Due = input.Due;
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Tarefa>> GetTarefa(int id)
-        {
-            var estudanteId = GetEstudanteId();
+        await _context.SaveChangesAsync();
+        return Ok(tarefa);
+    }
 
-            // Busca apenas se a tarefa for do dono, impedindo acesso de usuários estranhos
-            var tarefa = await _context.Tarefas.AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == id && t.EstudanteId == estudanteId);
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> Toggle(int id)
+    {
+        var userId = GetUserId();
+        var tarefa = await _context.Tarefas
+            .FirstOrDefaultAsync(x => x.Id == id && x.EstudanteId == userId);
 
-            if (tarefa == null) return NotFound("Tarefa não encontrada.");
+        if (tarefa == null) return NotFound();
 
-            return tarefa;
-        }
+        tarefa.Concluida = !tarefa.Concluida;
+        await _context.SaveChangesAsync();
+        return Ok(tarefa);
+    }
 
-        [HttpPost]
-        public async Task<ActionResult<Tarefa>> PostTarefa(Tarefa tarefa)
-        {
-            // O servidor garante a autoria, não confiamos no que o front-end envia
-            tarefa.EstudanteId = GetEstudanteId();
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = GetUserId();
+        var tarefa = await _context.Tarefas
+            .FirstOrDefaultAsync(x => x.Id == id && x.EstudanteId == userId);
 
-            _context.Tarefas.Add(tarefa);
-            await _context.SaveChangesAsync();
+        if (tarefa == null) return NotFound();
 
-            // Retorna o link para o GET deste recurso (seguindo padrão REST)
-            return CreatedAtAction(nameof(GetTarefa), new { id = tarefa.Id }, tarefa);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutTarefa(int id, Tarefa tarefa)
-        {
-            var estudanteId = GetEstudanteId();
-
-            // Valida se o ID da rota bate com o corpo e se o estudante é realmente o dono
-            if (id != tarefa.Id || tarefa.EstudanteId != estudanteId)
-                return BadRequest("ID inválido ou sem permissão.");
-
-            _context.Entry(tarefa).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Tarefas.Any(t => t.Id == id)) return NotFound();
-                else throw;
-            }
-
-            return NoContent();
-        }
-
-        [HttpPatch("{id}/alternar-conclusao")]
-        public async Task<IActionResult> AlternarConclusao(int id)
-        {
-            var estudanteId = GetEstudanteId();
-
-            // Busca a tarefa garantindo que ela pertence ao dono da sessão
-            var tarefa = await _context.Tarefas.FirstOrDefaultAsync(t => t.Id == id && t.EstudanteId == estudanteId);
-
-            if (tarefa == null) return NotFound("Tarefa não encontrada.");
-
-            // Inverte o status atual (toggle)
-            tarefa.Concluida = !tarefa.Concluida;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { id = tarefa.Id, concluida = tarefa.Concluida });
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTarefa(int id)
-        {
-            var estudanteId = GetEstudanteId();
-
-            // Verifica existência e propriedade antes de deletar
-            var tarefa = await _context.Tarefas.FirstOrDefaultAsync(t => t.Id == id && t.EstudanteId == estudanteId);
-
-            if (tarefa == null) return NotFound("Tarefa não encontrada.");
-
-            _context.Tarefas.Remove(tarefa);
-            await _context.SaveChangesAsync();
-
-            return NoContent(); // 204: Sucesso, mas sem corpo (padrão REST)
-        }
+        _context.Tarefas.Remove(tarefa);
+        await _context.SaveChangesAsync();
+        return Ok();
     }
 }

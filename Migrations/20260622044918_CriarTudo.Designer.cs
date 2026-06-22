@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudyTrackerApp.Models;
 
@@ -10,9 +11,11 @@ using StudyTrackerApp.Models;
 namespace StudyTrackerApp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622044918_CriarTudo")]
+    partial class CriarTudo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.2");
@@ -35,12 +38,6 @@ namespace StudyTrackerApp.Migrations
 
                     b.Property<string>("Professor")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("Progresso")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Tarefas")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -255,23 +252,8 @@ namespace StudyTrackerApp.Migrations
                     b.Property<int?>("DisciplinaId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Due")
-                        .IsRequired()
-                        .HasDefaultValue("")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("EstudanteId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasDefaultValue("media")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasDefaultValue("")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Titulo")
                         .IsRequired()

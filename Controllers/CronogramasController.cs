@@ -2,51 +2,70 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudyTrackerApp.Models;
+using System.Security.Claims;
 
-namespace StudyTrackerApp.Controllers
+namespace StudyTrackerApp.Controllers;
+
+[Authorize]
+[Route("api/[controller]")]
+[ApiController]
+public class CronogramasController : ControllerBase
 {
-    [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CronogramasController : ControllerBase
+    private readonly AppDbContext _context;
+
+    public CronogramasController(AppDbContext context)
     {
-        private readonly AppDbContext _context;
-        public CronogramasController(AppDbContext context) => _context = context;
+        _context = context;
+    }
 
-        private int GetEstudanteId() => int.Parse(User.FindFirst("id")?.Value ?? "0");
+    private int GetUserId()
+        => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cronograma>>> GetCronograma([FromQuery] int? materiaId = null)
-        {
-            var estudanteId = GetEstudanteId();
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var userId = GetUserId();
 
-            // Carregamos a Matéria junto (Include) para o front-end ter os dados completos.
-            // Filtramos pela matéria para garantir que o estudante só veja os próprios cronogramas.
-            var query = _context.Cronogramas
-                .Include(c => c.Materia)
-                .Where(c => c.Materia != null && c.Materia.EstudanteId == estudanteId);
+        var data = await _context.Cronogramas
+            .Include(c => c.Disciplina)
+            .Where(c => c.Disciplina!.EstudanteId == userId)
+            .ToListAsync();
 
-            if (materiaId.HasValue)
-                query = query.Where(c => c.MateriaId == materiaId.Value);
+        return Ok(data);
+    }
 
-            return await query.ToListAsync();
-        }
+    [HttpPost]
+    public async Task<IActionResult> Post(Cronograma cronograma)
+    {
+        var userId = GetUserId();
 
-        [HttpPost]
-        public async Task<ActionResult<Cronograma>> PostCronograma(Cronograma cronograma)
-        {
-            // Segurança: Antes de salvar, conferimos se a matéria pertence mesmo a quem está logado.
-            // Isso evita que um usuário envie um MateriaId de outra pessoa.
-            var materiaEhDoUsuario = await _context.Materias
-                .AnyAsync(m => m.Id == cronograma.MateriaId && m.EstudanteId == GetEstudanteId());
+        var valid = await _context.Disciplinas
+            .AnyAsync(d => d.Id == cronograma.DisciplinaId && d.EstudanteId == userId);
 
-            if (!materiaEhDoUsuario)
-                return BadRequest("Essa matéria não pertence a você.");
+        if (!valid)
+            return BadRequest("Disciplina inválida");
 
-            _context.Cronogramas.Add(cronograma);
-            await _context.SaveChangesAsync();
+        _context.Cronogramas.Add(cronograma);
+        await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCronograma), new { id = cronograma.Id }, cronograma);
-        }
+        return Ok(cronograma);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = GetUserId();
+
+        // Verifica posse via disciplina associada
+        var item = await _context.Cronogramas
+            .Include(c => c.Disciplina)
+            .FirstOrDefaultAsync(c => c.Id == id && c.Disciplina!.EstudanteId == userId);
+
+        if (item == null) return NotFound();
+
+        _context.Cronogramas.Remove(item);
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
 }

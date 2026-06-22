@@ -1,6 +1,69 @@
 [
   {
-    "ContainingType": "AuthController",
+    "ContainingType": "StudyTrackerApp.Controllers.ApontamentosController",
+    "Method": "Get",
+    "RelativePath": "api/Apontamentos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ApontamentosController",
+    "Method": "Post",
+    "RelativePath": "api/Apontamentos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "a",
+        "Type": "StudyTrackerApp.Models.Apontamento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ApontamentosController",
+    "Method": "Put",
+    "RelativePath": "api/Apontamentos/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "input",
+        "Type": "StudyTrackerApp.Models.Apontamento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ApontamentosController",
+    "Method": "Delete",
+    "RelativePath": "api/Apontamentos/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.AuthController",
     "Method": "Login",
     "RelativePath": "api/Auth/login",
     "HttpMethod": "POST",
@@ -16,34 +79,34 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.CronogramasController",
-    "Method": "GetCronograma",
-    "RelativePath": "api/Cronogramas",
-    "HttpMethod": "GET",
+    "ContainingType": "StudyTrackerApp.Controllers.AuthController",
+    "Method": "Register",
+    "RelativePath": "api/Auth/register",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "materiaId",
-        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
-        "IsRequired": false
+        "Name": "dto",
+        "Type": "StudyTrackerApp.Models.RegisterDto",
+        "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[StudyTrackerApp.Models.Cronograma, StudyTrackerApp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "StudyTrackerApp.Controllers.CronogramasController",
-    "Method": "PostCronograma",
+    "Method": "Get",
+    "RelativePath": "api/Cronogramas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.CronogramasController",
+    "Method": "Post",
     "RelativePath": "api/Cronogramas",
     "HttpMethod": "POST",
     "IsController": true,
@@ -55,89 +118,12 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "StudyTrackerApp.Models.Cronograma",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.MateriasController",
-    "Method": "GetMateria",
-    "RelativePath": "api/Materias",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[StudyTrackerApp.Models.Materia, StudyTrackerApp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.MateriasController",
-    "Method": "PostMateria",
-    "RelativePath": "api/Materias",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "materia",
-        "Type": "StudyTrackerApp.Models.Materia",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "StudyTrackerApp.Models.Materia",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.MateriasController",
-    "Method": "PutMateria",
-    "RelativePath": "api/Materias/{id}",
-    "HttpMethod": "PUT",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "materia",
-        "Type": "StudyTrackerApp.Models.Materia",
-        "IsRequired": true
-      }
-    ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.MateriasController",
-    "Method": "DeleteMateria",
-    "RelativePath": "api/Materias/{id}",
+    "ContainingType": "StudyTrackerApp.Controllers.CronogramasController",
+    "Method": "Delete",
+    "RelativePath": "api/Cronogramas/{id}",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
@@ -151,55 +137,9 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.PomodoroController",
-    "Method": "PostPomodoro",
-    "RelativePath": "api/Pomodoro",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "pomodoro",
-        "Type": "StudyTrackerApp.Models.Pomodoro",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "StudyTrackerApp.Models.Pomodoro",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.PomodoroController",
-    "Method": "GetPomodoros",
-    "RelativePath": "api/Pomodoro",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[StudyTrackerApp.Models.Pomodoro, StudyTrackerApp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.PomodoroController",
-    "Method": "GetResumoPomodoro",
-    "RelativePath": "api/Pomodoro/resumo",
+    "ContainingType": "StudyTrackerApp.Controllers.DisciplinasController",
+    "Method": "Get",
+    "RelativePath": "api/Disciplinas",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -207,87 +147,25 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "GetTarefas",
-    "RelativePath": "api/Tarefas",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "concluida",
-        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[StudyTrackerApp.Models.Tarefa, StudyTrackerApp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "PostTarefa",
-    "RelativePath": "api/Tarefas",
+    "ContainingType": "StudyTrackerApp.Controllers.DisciplinasController",
+    "Method": "Post",
+    "RelativePath": "api/Disciplinas",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "tarefa",
-        "Type": "StudyTrackerApp.Models.Tarefa",
+        "Name": "d",
+        "Type": "Disciplina",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "StudyTrackerApp.Models.Tarefa",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "GetTarefa",
-    "RelativePath": "api/Tarefas/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "StudyTrackerApp.Models.Tarefa",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "PutTarefa",
-    "RelativePath": "api/Tarefas/{id}",
+    "ContainingType": "StudyTrackerApp.Controllers.DisciplinasController",
+    "Method": "Put",
+    "RelativePath": "api/Disciplinas/{id}",
     "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
@@ -298,17 +176,17 @@
         "IsRequired": true
       },
       {
-        "Name": "tarefa",
-        "Type": "StudyTrackerApp.Models.Tarefa",
+        "Name": "input",
+        "Type": "Disciplina",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "DeleteTarefa",
-    "RelativePath": "api/Tarefas/{id}",
+    "ContainingType": "StudyTrackerApp.Controllers.DisciplinasController",
+    "Method": "Delete",
+    "RelativePath": "api/Disciplinas/{id}",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
@@ -322,10 +200,299 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
-    "Method": "AlternarConclusao",
-    "RelativePath": "api/Tarefas/{id}/alternar-conclusao",
+    "ContainingType": "StudyTrackerApp.Controllers.EventosController",
+    "Method": "Get",
+    "RelativePath": "api/Eventos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.EventosController",
+    "Method": "Post",
+    "RelativePath": "api/Eventos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "e",
+        "Type": "StudyTrackerApp.Models.Evento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.EventosController",
+    "Method": "Put",
+    "RelativePath": "api/Eventos/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "input",
+        "Type": "StudyTrackerApp.Models.Evento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.EventosController",
+    "Method": "Delete",
+    "RelativePath": "api/Eventos/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.NotasController",
+    "Method": "Get",
+    "RelativePath": "api/Notas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.NotasController",
+    "Method": "Post",
+    "RelativePath": "api/Notas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "n",
+        "Type": "StudyTrackerApp.Models.Nota",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.NotasController",
+    "Method": "Put",
+    "RelativePath": "api/Notas/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "input",
+        "Type": "StudyTrackerApp.Models.Nota",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.NotasController",
+    "Method": "Delete",
+    "RelativePath": "api/Notas/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ObjetivosController",
+    "Method": "Get",
+    "RelativePath": "api/Objetivos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ObjetivosController",
+    "Method": "Post",
+    "RelativePath": "api/Objetivos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "o",
+        "Type": "StudyTrackerApp.Models.Objetivo",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ObjetivosController",
+    "Method": "Delete",
+    "RelativePath": "api/Objetivos/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.ObjetivosController",
+    "Method": "Toggle",
+    "RelativePath": "api/Objetivos/{id}/toggle",
     "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.SessoesController",
+    "Method": "Get",
+    "RelativePath": "api/Sessoes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.SessoesController",
+    "Method": "Post",
+    "RelativePath": "api/Sessoes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "s",
+        "Type": "StudyTrackerApp.Models.Sessao",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.SessoesController",
+    "Method": "Delete",
+    "RelativePath": "api/Sessoes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
+    "Method": "Get",
+    "RelativePath": "api/Tarefas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
+    "Method": "Post",
+    "RelativePath": "api/Tarefas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "tarefa",
+        "Type": "StudyTrackerApp.Models.Tarefa",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
+    "Method": "Put",
+    "RelativePath": "api/Tarefas/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "input",
+        "Type": "StudyTrackerApp.Models.Tarefa",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
+    "Method": "Toggle",
+    "RelativePath": "api/Tarefas/{id}",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudyTrackerApp.Controllers.TarefasController",
+    "Method": "Delete",
+    "RelativePath": "api/Tarefas/{id}",
+    "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
     "Parameters": [
