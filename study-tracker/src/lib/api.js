@@ -1,200 +1,468 @@
-// Camada de "API" do Study Tracker.
-// Subjects (Disciplinas) ligados ao backend C#/.NET via authFetch.
-// As restantes entidades continuam em localStorage por agora.
-
 import { authFetch } from "@/lib/auth";
 
-const K = {
-  events: "st.events",
-  tasks: "st.tasks",
-  notes: "st.notes",
-  grades: "st.grades",
-  sessions: "st.sessions",
-  schedule: "st.schedule",
-  goals: "st.goals",
-};
+// ─── Mappers: Tarefas ────────────────────────────────────────────────────────
 
-const seedEvents = [
-  { id: "e1", name: "Teste de Matemática", subject: "Álgebra", date: "25/Mai", type: "Teste" },
-  { id: "e2", name: "Trabalho de História", subject: "História", date: "27/Mai", type: "Entrega" },
-  { id: "e3", name: "Projeto de Programação", subject: "Programação", date: "30/Mai", type: "Projeto" },
-  { id: "e4", name: "Apresentação Oral", subject: "Inglês", date: "02/Jun", type: "Entrega" },
-  { id: "e5", name: "Teste de Física", subject: "Física", date: "05/Jun", type: "Teste" },
-];
-
-const seedTasks = [
-  { id: "t1", title: "Resolver exercícios cap. 4", subject: "Matemática", priority: "alta", due: "Hoje", done: false },
-  { id: "t2", title: "Ler resumo de WW2", subject: "História", priority: "media", due: "Amanhã", done: false },
-  { id: "t3", title: "Finalizar projeto Java", subject: "Programação", priority: "alta", due: "30/Mai", done: false },
-  { id: "t4", title: "Vocabulário unit 5", subject: "Inglês", priority: "baixa", due: "02/Jun", done: true },
-];
-
-const seedNotes = [
-  { id: "n1", title: "Derivadas — regras básicas", subject: "Matemática", content: "d/dx[x^n] = n·x^(n-1)\nd/dx[sin x] = cos x", updatedAt: new Date().toISOString() },
-  { id: "n2", title: "Revolução Industrial", subject: "História", content: "Séc. XVIII, Inglaterra, máquina a vapor...", updatedAt: new Date().toISOString() },
-];
-
-const seedGrades = [
-  { id: "g1", subject: "Matemática", title: "Teste 1", value: 16, weight: 40 },
-  { id: "g2", subject: "Matemática", title: "Trabalho", value: 18, weight: 20 },
-  { id: "g3", subject: "Programação", title: "Projeto 1", value: 17, weight: 50 },
-  { id: "g4", subject: "Inglês", title: "Teste oral", value: 15, weight: 30 },
-];
-
-function todayMinus(days) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-const seedSessions = [
-  { id: "ss1", subject: "Matemática", minutes: 90, date: todayMinus(0) },
-  { id: "ss2", subject: "Programação", minutes: 50, date: todayMinus(1) },
-  { id: "ss3", subject: "Inglês", minutes: 25, date: todayMinus(1) },
-  { id: "ss4", subject: "História", minutes: 75, date: todayMinus(2) },
-  { id: "ss5", subject: "Matemática", minutes: 60, date: todayMinus(3) },
-  { id: "ss6", subject: "Programação", minutes: 110, date: todayMinus(4) },
-  { id: "ss7", subject: "Matemática", minutes: 45, date: todayMinus(5) },
-  { id: "ss8", subject: "Inglês", minutes: 30, date: todayMinus(6) },
-];
-
-const seedSchedule = [
-  { id: "h1", day: "Seg", start: "08:00", end: "09:30", subject: "Matemática", room: "Sala 12" },
-  { id: "h2", day: "Seg", start: "10:00", end: "11:30", subject: "Programação", room: "Lab 3" },
-  { id: "h3", day: "Ter", start: "09:00", end: "10:30", subject: "Inglês", room: "Sala 8" },
-  { id: "h4", day: "Qua", start: "08:00", end: "09:30", subject: "História", room: "Sala 5" },
-  { id: "h5", day: "Qui", start: "14:00", end: "15:30", subject: "Programação", room: "Lab 3" },
-  { id: "h6", day: "Sex", start: "10:00", end: "11:30", subject: "Matemática", room: "Sala 12" },
-];
-
-const seedGoals = [
-  { id: "go1", title: "Estudar 15h esta semana", target: 15, current: 8, unit: "horas" },
-  { id: "go2", title: "Concluir 20 tarefas", target: 20, current: 12, unit: "tarefas" },
-  { id: "go3", title: "Ler 3 capítulos de História", target: 3, current: 1, unit: "capítulos" },
-];
-
-function read(key, seed) {
-  if (typeof window === "undefined") return seed;
-  const raw = window.localStorage.getItem(key);
-  if (!raw) {
-    window.localStorage.setItem(key, JSON.stringify(seed));
-    return seed;
-  }
-  try { return JSON.parse(raw); } catch { return seed; }
-}
-function write(key, value) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-function uid() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
-}
-
-function makeCrud(key, seed) {
+function toTaskFrontend(t) {
   return {
-    async list() { return read(key, seed); },
-    async create(input) {
-      const all = read(key, seed);
-      const created = { ...input, id: uid() };
-      write(key, [created, ...all]);
-      return created;
-    },
-    async update(id, patch) {
-      const all = read(key, seed);
-      const next = all.map((x) => (x.id === id ? { ...x, ...patch } : x));
-      write(key, next);
-      return next.find((x) => x.id === id);
-    },
-    async remove(id) {
-      const all = read(key, seed);
-      write(key, all.filter((x) => x.id !== id));
-    },
+    id: t.id ?? t.Id,
+    title: t.titulo ?? t.Titulo ?? t.title ?? "",
+    date: t.data ?? t.Data,
+    done: t.concluida ?? t.Concluida ?? false,
+    subject: t.subject ?? t.Subject ?? "",
+    priority: t.priority ?? t.Priority ?? "media",
+    due: t.due ?? t.Due ?? "",
+    subjectId: t.disciplinaId ?? t.DisciplinaId,
   };
 }
 
-// ---------------- SUBJECTS (Disciplinas) -> Backend C#/.NET ----------------
+function toTaskBackend(t) {
+  return {
+    titulo: t.title ?? t.titulo ?? "",
+    data: t.date ?? new Date().toISOString(),
+    concluida: t.done ?? false,
+    subject: t.subject ?? "",
+    priority: t.priority ?? "media",
+    due: t.due ?? "",
+    disciplinaId: t.subjectId ?? null,
+  };
+}
 
-function toFrontend(m) {
+// ─── Mappers: Disciplinas ────────────────────────────────────────────────────
+
+function toSubjectFrontend(s) {
   return {
-    id: m.id ?? m.Id,
-    name: m.nome ?? m.Nome,
-    teacher: m.professor ?? m.Professor,
-    progress: m.progresso ?? m.Progresso,
-    tasks: m.numTarefas ?? m.NumTarefas,
+    id: s.id ?? s.Id,
+    name: s.nome ?? s.Nome,
+    nome: s.nome ?? s.Nome,
+    teacher: s.professor ?? s.Professor,
+    professor: s.professor ?? s.Professor,
+    active: s.ativa ?? s.Ativa,
+    tarefas: s.tarefas ?? s.Tarefas ?? 0,
+    progresso: s.progresso ?? s.Progresso ?? 0,
   };
 }
-function toBackend(s) {
+
+function toSubjectBackend(s) {
   return {
-    nome: s.name,
-    professor: s.teacher,
-    progresso: s.progress,
-    numTarefas: s.tasks,
-    ativa: true,
+    nome: s.nome ?? s.name ?? "",
+    professor: s.professor ?? s.teacher ?? "",
+    ativa: s.ativa ?? s.active ?? true,
+    tarefas: s.tarefas ?? s.Tarefas ?? 0,
+    progresso: s.progresso ?? s.Progresso ?? 0,
   };
 }
+
+// ─── Mappers: Eventos ────────────────────────────────────────────────────────
+
+function toEventFrontend(e) {
+  return {
+    id: e.id ?? e.Id,
+    name: e.titulo ?? e.Titulo ?? e.name ?? e.Name ?? "",
+    date: e.data ?? e.Data ?? e.date ?? e.Date ?? "",
+    subject: e.subject ?? e.Subject ?? "",
+    type: e.type ?? e.Type ?? "Teste",
+  };
+}
+
+function toEventBackend(e) {
+  return {
+    titulo: e.name ?? e.titulo ?? "",
+    data: e.date ?? e.data ?? "",
+    subject: e.subject ?? e.Subject ?? "",
+    type: e.type ?? e.Type ?? "Teste",
+  };
+}
+
+// ─── Mappers: Apontamentos (página Notas - editor de texto) ─────────────────
+
+function toNoteFrontend(n) {
+  return {
+    id: n.id ?? n.Id,
+    title: n.title ?? n.Title ?? "Sem título",
+    subject: n.subject ?? n.Subject ?? "Geral",
+    content: n.content ?? n.Content ?? "",
+    updatedAt: n.updatedAt ?? n.UpdatedAt,
+  };
+}
+
+function toNoteBackend(n) {
+  return {
+    title: n.title ?? "",
+    subject: n.subject ?? "",
+    content: n.content ?? "",
+    updatedAt: n.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+// ─── Mappers: Notas numéricas (página Avaliações) ───────────────────────────
+
+function toGradeFrontend(g) {
+  return {
+    id: g.id ?? g.Id,
+    subject: g.subject ?? g.Subject ?? "",
+    title: g.title ?? g.Title ?? "",
+    value: g.value ?? g.Value ?? 0,
+    weight: g.weight ?? g.Weight ?? 0,
+  };
+}
+
+function toGradeBackend(g) {
+  return {
+    subject: g.subject ?? "",
+    title: g.title ?? "",
+    value: Number(g.value ?? 0),
+    weight: Number(g.weight ?? 0),
+  };
+}
+
+// ─── Mappers: Sessões ────────────────────────────────────────────────────────
+
+function toSessionFrontend(s) {
+  return {
+    id: s.id ?? s.Id,
+    subject: s.subject ?? s.Subject ?? "",
+    minutes: s.minutes ?? s.Minutes ?? 0,
+    date: s.date ?? s.Date ?? "",
+  };
+}
+
+function toSessionBackend(s) {
+  return {
+    subject: s.subject ?? "",
+    minutes: Number(s.minutes ?? 0),
+    date: s.date ?? new Date().toISOString().slice(0, 10),
+  };
+}
+
+// ─── Mappers: Horário (Cronogramas) ─────────────────────────────────────────
+
+function toScheduleFrontend(c) {
+  return {
+    id: c.id ?? c.Id,
+    day: c.day ?? c.Day ?? c.titulo ?? c.Titulo ?? "",
+    start: c.start ?? c.Start ?? "",
+    end: c.end ?? c.End ?? "",
+    subject: c.subject ?? c.Subject ?? c.subtitulo ?? c.Subtitulo ?? "",
+    room: c.room ?? c.Room ?? "",
+    disciplinaId: c.disciplinaId ?? c.DisciplinaId,
+  };
+}
+
+function toScheduleBackend(c, disciplinaId) {
+  return {
+    titulo: c.day ?? "",
+    subtitulo: c.subject ?? "",
+    data: new Date().toISOString(),
+    tipo: `${c.start ?? ""}|${c.end ?? ""}|${c.room ?? ""}`,
+    disciplinaId: disciplinaId ?? c.disciplinaId ?? 0,
+  };
+}
+
+// ─── Mappers: Objetivos ──────────────────────────────────────────────────────
+
+function toGoalFrontend(g) {
+  return {
+    id: g.id ?? g.Id,
+    title: g.title ?? g.Title ?? "",
+    description: g.description ?? g.Description ?? "",
+    done: g.done ?? g.Done ?? false,
+    createdAt: g.createdAt ?? g.CreatedAt,
+  };
+}
+
+function toGoalBackend(g) {
+  return {
+    title: g.title ?? "",
+    description: g.description ?? "",
+    done: g.done ?? false,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Disciplinas
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export async function listSubjects() {
-  const res = await authFetch("/Materias");
+  const res = await authFetch("/Disciplinas");
+  if (!res.ok) return [];
   const data = await res.json();
-  return data.map(toFrontend);
+  return data.map(toSubjectFrontend);
 }
 
-export async function createSubject(s) {
-  const res = await authFetch("/Materias", {
+// Alias usado em Calendário e Horário
+export const listMaterias = listSubjects;
+
+export async function createSubject(subject) {
+  const res = await authFetch("/Disciplinas", {
     method: "POST",
-    body: JSON.stringify(toBackend(s)),
+    body: JSON.stringify(toSubjectBackend(subject)),
   });
-  const data = await res.json();
-  return toFrontend(data);
+  if (!res.ok) return null;
+  return toSubjectFrontend(await res.json());
 }
 
-export async function updateSubject(id, s) {
-  await authFetch(`/Materias/${id}`, {
+export async function updateSubject(id, subject) {
+  const res = await authFetch(`/Disciplinas/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ id, ...toBackend(s) }),
+    body: JSON.stringify(toSubjectBackend(subject)),
   });
-  return { id, ...s };
+  if (!res.ok) return null;
+  return toSubjectFrontend(await res.json());
 }
 
 export async function deleteSubject(id) {
-  await authFetch(`/Materias/${id}`, { method: "DELETE" });
+  await authFetch(`/Disciplinas/${id}`, { method: "DELETE" });
 }
 
-// ---------------- Restantes entidades (ainda em localStorage) ----------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Tarefas
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const events = makeCrud(K.events, seedEvents);
-const tasks = makeCrud(K.tasks, seedTasks);
-const notes = makeCrud(K.notes, seedNotes);
-const grades = makeCrud(K.grades, seedGrades);
-const sessions = makeCrud(K.sessions, seedSessions);
-const schedule = makeCrud(K.schedule, seedSchedule);
-const goals = makeCrud(K.goals, seedGoals);
+export async function listTasks() {
+  const res = await authFetch("/Tarefas");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(toTaskFrontend);
+}
 
-export const listEvents = events.list;
-export const createEvent = events.create;
-export const updateEvent = events.update;
-export const deleteEvent = events.remove;
-export const listTasks = tasks.list;
-export const createTask = tasks.create;
-export const updateTask = tasks.update;
-export const deleteTask = tasks.remove;
-export const listNotes = notes.list;
-export const createNote = notes.create;
-export const updateNote = notes.update;
-export const deleteNote = notes.remove;
-export const listGrades = grades.list;
-export const createGrade = grades.create;
-export const updateGrade = grades.update;
-export const deleteGrade = grades.remove;
-export const listSessions = sessions.list;
-export const createSession = sessions.create;
-export const listSchedule = schedule.list;
-export const createSchedule = schedule.create;
-export const updateSchedule = schedule.update;
-export const deleteSchedule = schedule.remove;
-export const listGoals = goals.list;
-export const createGoal = goals.create;
-export const updateGoal = goals.update;
-export const deleteGoal = goals.remove;
+export async function createTask(task) {
+  const res = await authFetch("/Tarefas", {
+    method: "POST",
+    body: JSON.stringify(toTaskBackend(task)),
+  });
+  if (!res.ok) return null;
+  return toTaskFrontend(await res.json());
+}
+
+export async function updateTask(id, patch) {
+  const res = await authFetch(`/Tarefas/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(toTaskBackend(patch)),
+  });
+  if (!res.ok) return null;
+  return toTaskFrontend(await res.json());
+}
+
+export async function toggleTask(id) {
+  const res = await authFetch(`/Tarefas/${id}`, { method: "PATCH" });
+  if (!res.ok) return null;
+  return toTaskFrontend(await res.json());
+}
+
+export async function deleteTask(id) {
+  await authFetch(`/Tarefas/${id}`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Eventos (Calendário)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function listEvents() {
+  const res = await authFetch("/Eventos");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(toEventFrontend);
+}
+
+export async function createEvent(event) {
+  const res = await authFetch("/Eventos", {
+    method: "POST",
+    body: JSON.stringify(toEventBackend(event)),
+  });
+  if (!res.ok) return null;
+  return toEventFrontend(await res.json());
+}
+
+export async function updateEvent(id, event) {
+  const res = await authFetch(`/Eventos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(toEventBackend(event)),
+  });
+  if (!res.ok) return null;
+  return toEventFrontend(await res.json());
+}
+
+export async function deleteEvent(id) {
+  await authFetch(`/Eventos/${id}`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Apontamentos (página Notas — editor de texto)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function listNotes() {
+  const res = await authFetch("/Apontamentos");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(toNoteFrontend);
+}
+
+export async function createNote(note) {
+  const res = await authFetch("/Apontamentos", {
+    method: "POST",
+    body: JSON.stringify(toNoteBackend(note)),
+  });
+  if (!res.ok) return null;
+  return toNoteFrontend(await res.json());
+}
+
+export async function updateNote(id, note) {
+  const res = await authFetch(`/Apontamentos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(toNoteBackend(note)),
+  });
+  if (!res.ok) return null;
+  return toNoteFrontend(await res.json());
+}
+
+export async function deleteNote(id) {
+  await authFetch(`/Apontamentos/${id}`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Notas numéricas (página Avaliações)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function listGrades() {
+  try {
+    const res = await authFetch("/Notas");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map(toGradeFrontend);
+  } catch {
+    return [];
+  }
+}
+
+export async function createGrade(grade) {
+  const res = await authFetch("/Notas", {
+    method: "POST",
+    body: JSON.stringify(toGradeBackend(grade)),
+  });
+  if (!res.ok) return null;
+  return toGradeFrontend(await res.json());
+}
+
+export async function updateGrade(id, grade) {
+  const res = await authFetch(`/Notas/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(toGradeBackend(grade)),
+  });
+  if (!res.ok) return null;
+  return toGradeFrontend(await res.json());
+}
+
+export async function deleteGrade(id) {
+  await authFetch(`/Notas/${id}`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Sessões de estudo (Estatísticas)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function listSessions() {
+  const res = await authFetch("/Sessoes");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(toSessionFrontend);
+}
+
+export async function createSession(session) {
+  const res = await authFetch("/Sessoes", {
+    method: "POST",
+    body: JSON.stringify(toSessionBackend(session)),
+  });
+  if (!res.ok) return null;
+  return toSessionFrontend(await res.json());
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Horário (Cronogramas)
+//
+// NOTA: O modelo Cronograma no backend foi desenhado para eventos com
+// DisciplinaId obrigatório. O frontend usa campos genéricos (day, start, end,
+// subject, room). O mapeamento usa Titulo=day, Subtitulo=subject, Tipo para
+// guardar start|end|room. Para simplificar, o listSchedule reconstrói esses
+// campos a partir dos dados guardados.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function parseCronograma(c) {
+  // Tipo guarda "HH:MM|HH:MM|Sala" — extrai os campos
+  const tipo = c.tipo ?? c.Tipo ?? "";
+  const parts = tipo.split("|");
+  return {
+    id: c.id ?? c.Id,
+    day: c.titulo ?? c.Titulo ?? "",
+    subject: c.subtitulo ?? c.Subtitulo ?? "",
+    start: parts[0] ?? "",
+    end: parts[1] ?? "",
+    room: parts[2] ?? "",
+    disciplinaId: c.disciplinaId ?? c.DisciplinaId,
+  };
+}
+
+export async function listSchedule() {
+  const res = await authFetch("/Cronogramas");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(parseCronograma);
+}
+
+export async function createSchedule(item) {
+  // Precisa de uma disciplinaId válida — usa a primeira disponível
+  const subjects = await listSubjects();
+  const disciplinaId = subjects[0]?.id ?? 0;
+
+  if (!disciplinaId) {
+    throw new Error("Cria pelo menos uma disciplina antes de adicionar aulas ao horário.");
+  }
+
+  const body = {
+    titulo: item.day ?? "",
+    subtitulo: item.subject ?? "",
+    data: new Date().toISOString(),
+    tipo: `${item.start ?? ""}|${item.end ?? ""}|${item.room ?? ""}`,
+    disciplinaId,
+  };
+
+  const res = await authFetch("/Cronogramas", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return null;
+  return parseCronograma(await res.json());
+}
+
+export async function deleteSchedule(id) {
+  await authFetch(`/Cronogramas/${id}`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API: Objetivos
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function listGoals() {
+  const res = await authFetch("/Objetivos");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(toGoalFrontend);
+}
+
+export async function createGoal(goal) {
+  const res = await authFetch("/Objetivos", {
+    method: "POST",
+    body: JSON.stringify(toGoalBackend(goal)),
+  });
+  if (!res.ok) return null;
+  return toGoalFrontend(await res.json());
+}
+
+export async function toggleGoal(id) {
+  const res = await authFetch(`/Objetivos/${id}/toggle`, { method: "PATCH" });
+  if (!res.ok) return null;
+  return toGoalFrontend(await res.json());
+}
+
+export async function deleteGoal(id) {
+  await authFetch(`/Objetivos/${id}`, { method: "DELETE" });
+}

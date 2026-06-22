@@ -37,13 +37,13 @@ export default function Notas() {
   async function add() {
     try {
       if (!API.createNote) return;
-      // Alterado: campos vazios para que o usuário preencha do zero
       const raw = await API.createNote({ 
-        title: "", 
-        subject: "", 
+        title: "Nova nota", 
+        subject: "Geral", 
         content: "", 
         updatedAt: new Date().toISOString() 
       });
+      if (!raw) { toast.error("Erro ao criar nova nota."); return; }
       const created = normalize(raw);
       setNotes((p) => [created, ...p]);
       setActive(created);

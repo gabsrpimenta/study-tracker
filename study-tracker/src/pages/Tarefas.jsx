@@ -40,8 +40,8 @@ export default function Tarefas() {
   }
 
   async function toggle(t) {
-    const updated = await API.updateTask(t.id, { ...t, done: !t.done });
-    setTasks((prev) => prev.map((x) => (x.id === t.id ? updated : x)));
+    const updated = await API.toggleTask(t.id);
+    if (updated) setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, done: updated.done } : x)));
   }
 
   async function remove(id) {
