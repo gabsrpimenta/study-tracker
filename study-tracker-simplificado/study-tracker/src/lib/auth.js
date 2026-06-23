@@ -3,7 +3,7 @@
 // ==========================================
 // Lida com o Login, Registo e a persistência da Sessão baseada em JWT (JSON Web Tokens).
 
-const API_URL = "http://localhost:5059/api";
+const API_URL = "http://localhost:5089/api";
 
 // --- GESTÃO DO TOKEN (Armazenamento Local Seguro) ---
 export const getToken = () => localStorage.getItem("token");

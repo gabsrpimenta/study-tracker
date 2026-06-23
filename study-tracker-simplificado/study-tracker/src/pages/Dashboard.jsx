@@ -1,61 +1,79 @@
 import { useEffect, useState } from "react";
-import { Flame, Clock, CheckSquare, Award, Target, Plus, CheckCircle2 } from "lucide-react";
+import { Flame, Target, Plus, CheckCircle2, Loader2, Palette, Lock, Pencil, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-
-// Importações necessárias para a janela (Modal) funcionar
+import { Badge } from "@/components/ui/Primitives";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input, Label } from "@/components/ui/Input";
-import { toast } from "sonner"; // Biblioteca para mostrar notificações bonitas na tela
+import { toast } from "sonner"; 
 
-import { listSessions, listTasks, listGrades } from "@/lib/api";
+import { listSessions, listTasks, listGrades, listEvents, listGoals, createGoal, deleteGoal } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+
+const obterDataLocal = (dataObj) => {
+  const ano = dataObj.getFullYear();
+  const mes = String(dataObj.getMonth() + 1).padStart(2, "0");
+  const dia = String(dataObj.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+};
+
+const THEMES = [
+  { id: "default", name: "Padrão", minDays: 0, badge: "NÍVEL BÁSICO" },
+  { id: "theme-midnight", name: "Midnight Gold", minDays: 7, badge: "NÍVEL: MIDNIGHT GOLD" },
+  { id: "theme-nordic", name: "Nordic Mint", minDays: 15, badge: "NÍVEL: NORDIC MINT" },
+  { id: "theme-cyberpunk", name: "Cyberpunk", minDays: 30, badge: "NÍVEL: CYBERPUNK" },
+];
+
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export default function Dashboard() {
   // ==========================================
   // 1. ESTADOS (STATE)
-  // O coração do React: Variáveis que, quando alteradas, fazem a tela se atualizar sozinha!
   // ==========================================
-  
-  // Guarda os dados que vêm da API
-  const [data, setData] = useState({ sessions: [], tasks: [], grades: [], goals: [] });
-  
-  // Guarda a sequência de dias seguidos de estudo (Streak)
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState({ sessions: [], tasks: [], grades: [], goals: [], events: [] });
   const [streak, setStreak] = useState(0);
-  
-  // Pega as informações do usuário logado
   const user = getUser();
-
-  // Controla se a janelinha de "Novo Objetivo" está visível (true) ou oculta (false)
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   
-  // Guarda o texto que o estudante digita dentro do input da janelinha
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "" });
+
+  const [dailyGoal, setDailyGoal] = useState(() => parseInt(localStorage.getItem("daily_goal")) || 60);
+  const [isDailyGoalModalOpen, setIsDailyGoalModalOpen] = useState(false);
+  const [dailyGoalInput, setDailyGoalInput] = useState(dailyGoal);
+
+  const [activeTheme, setActiveTheme] = useState(() => localStorage.getItem("user_theme") || "default");
+
+  // ESTADOS DO CALENDÁRIO
+  const hojeData = new Date();
+  const hojeStr = obterDataLocal(hojeData);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const anoAtual = calendarDate.getFullYear();
+  const mesAtual = calendarDate.getMonth();
+  const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+  const primeiroDiaSemana = new Date(anoAtual, mesAtual, 1).getDay();
+
+  const isMesAtual = anoAtual === hojeData.getFullYear() && mesAtual === hojeData.getMonth();
 
   // ==========================================
   // 2. EFEITOS (USEEFFECT)
-  // Código que roda automaticamente quando a página é carregada pela primeira vez.
   // ==========================================
   useEffect(() => {
-    // Promise.all: Uma técnica para buscar vários dados na API ao mesmo tempo (em paralelo). 
-    // Isso deixa o carregamento da página muito mais rápido.
-    Promise.all([listSessions(), listTasks(), listGrades()]).then(([s, t, g]) => {
-      setData({ sessions: s, tasks: t, grades: g, goals: [] }); 
+    Promise.all([
+      listSessions ? listSessions() : Promise.resolve([]), 
+      listTasks ? listTasks() : Promise.resolve([]), 
+      listGrades ? listGrades() : Promise.resolve([]),
+      listEvents ? listEvents() : Promise.resolve([]),
+      listGoals ? listGoals() : Promise.resolve([]) // Nova API sincronizada
+    ]).then(([s, t, g, e, goalsData]) => {
+      setData({ sessions: s || [], tasks: t || [], grades: g || [], goals: goalsData || [], events: e || [] }); 
+      setIsLoading(false);
+    }).catch(() => {
+      toast.error("Erro ao carregar dados do servidor.");
+      setIsLoading(false);
     });
 
-    // CORREÇÃO DE FUSO HORÁRIO: Função interna para gerar strings "YYYY-MM-DD" baseadas no relógio local do aluno
-    const obterDataLocal = (dataObj) => {
-      const ano = dataObj.getFullYear();
-      const mes = String(dataObj.getMonth() + 1).padStart(2, "0");
-      const dia = String(dataObj.getDate()).padStart(2, "0");
-      return `${ano}-${mes}-${dia}`;
-    };
-
-    // O LOCAL CORRETO DA SEQUÊNCIA É AQUI:
-    // Lógica CORRIGIDA da "Sequência de Dias" (Streak) e Ativação dos Prêmios da Gamificação
-    const hoje = obterDataLocal(new Date()); // Evita o erro de virar o dia antes da hora com toISOString()
-    
-    // Nova verificação: Pega a data de ontem para saber se a sequência foi quebrada
     const ontemData = new Date();
     ontemData.setDate(ontemData.getDate() - 1);
     const ontem = obterDataLocal(ontemData);
@@ -64,226 +82,294 @@ export default function Dashboard() {
     const storedData = JSON.parse(localStorage.getItem(storageKey)) || { lastDate: "", count: 0 };
     
     let count = storedData.count;
-
-    // Se o usuário ainda não tiver acessado o sistema hoje, fazemos as checagens reais:
-    if (storedData.lastDate !== hoje) {
-      if (storedData.lastDate === ontem) {
-        // Se ele acessou ontem e está acessando hoje, a sequência continua!
-        count += 1; 
-      } else if (storedData.lastDate === "") {
-        // Se for a primeiríssima vez dele no sistema, começa em 1
-        count = 1;
-      } else {
-        // Se ele ficou dias sem entrar (a última data não é ontem), a sequência quebrou e reseta para 1!
-        count = 1;
-      }
-      // Guarda a nova sequência updated no navegador (Local Storage)
-      localStorage.setItem(storageKey, JSON.stringify({ lastDate: hoje, count }));
+    if (storedData.lastDate !== hojeStr) {
+      if (storedData.lastDate === ontem) count += 1; 
+      else if (storedData.lastDate === "") count = 1;
+      else count = 1;
+      localStorage.setItem(storageKey, JSON.stringify({ lastDate: hojeStr, count }));
     }
     setStreak(count);
+  }, [user?.id, hojeStr]); 
 
-    // MÁGICA DOS PRÊMIOS: Aplica as classes CSS dos prêmios baseando-se nos dias conquistados (count)
-    // Primeiro limpamos os temas antigos para não acumular classes no corpo do site
-    document.body.classList.remove("theme-midnight", "theme-nordic", "theme-cyberpunk");
-    
-    // Ativa o prêmio correspondente aos dias seguidos
-    if (count >= 30) {
-      document.body.classList.add("theme-cyberpunk"); // Prêmio Máximo: Cyberpunk (30 dias)
-    } else if (count >= 15) {
-      document.body.classList.add("theme-nordic");    // Prêmio Intermediário: Nordic Mint (15 dias)
-    } else if (count >= 7) {
-      document.body.classList.add("theme-midnight");  // Primeiro Prêmio: Midnight Gold (7 dias)
-    }
-
-    // RETORNO DE LIMPEZA (CLEANUP): Remove o tema do body caso o usuário saia dessa página (SaaS Boas Práticas)
-    return () => {
-      document.body.classList.remove("theme-midnight", "theme-nordic", "theme-cyberpunk");
-    };
-
-  }, [user?.id]); // O array indica que o useEffect roda quando o id do usuário é carregado
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("theme-midnight", "theme-nordic", "theme-cyberpunk");
+    if (activeTheme !== "default") root.classList.add(activeTheme);
+    localStorage.setItem("user_theme", activeTheme);
+  }, [activeTheme]);
 
   // ==========================================
-  // 3. FUNÇÕES DE AÇÃO
+  // 3. FUNÇÕES DE AÇÃO (INTEGRADAS COM API)
   // ==========================================
-  
-  // Função disparada quando o usuário clica no botão "Guardar Objetivo"
-  function handleSaveGoal() {
-    // Validação de dados: O .trim() remove os espaços em branco. 
-    // Se o campo estiver vazio, mostramos um erro e paramos a função com o 'return'.
-    if (!goalForm.title.trim()) {
-      toast.error("O título do objetivo é obrigatório!");
-      return; 
+  async function handleSaveGoal() {
+    if (!goalForm.title.trim()) { toast.error("O título é obrigatório!"); return; }
+    try {
+      const novoObjetivo = await createGoal({ title: goalForm.title, done: false });
+      setData((prev) => ({ ...prev, goals: [...prev.goals, novoObjetivo] }));
+      setIsGoalModalOpen(false);
+      setGoalForm({ title: "" });
+      toast.success("Objetivo adicionado à BD!");
+    } catch {
+      toast.error("Erro ao guardar o objetivo.");
     }
-
-    const newGoal = { title: goalForm.title };
-
-    // Atualiza a lista na tela: 
-    // Mantém tudo que já existia (...data) e adiciona o novo objetivo no final do array (...data.goals, newGoal)
-    setData({ ...data, goals: [...data.goals, newGoal] });
-
-    // Fecha a janelinha e limpa o campo de texto para a próxima vez
-    setIsGoalModalOpen(false);
-    setGoalForm({ title: "" });
-    toast.success("Objetivo criado com sucesso!");
   }
+
+  async function handleRemoveGoal(id) {
+    try {
+      await deleteGoal(id);
+      setData((prev) => ({
+        ...prev,
+        goals: prev.goals.filter((g) => (g.id || g.Id) !== id),
+      }));
+      toast.success("Objetivo removido.");
+    } catch {
+      toast.error("Erro ao remover o objetivo.");
+    }
+  }
+
+  function handleSaveDailyGoal() {
+    const val = parseInt(dailyGoalInput);
+    if (isNaN(val) || val <= 0) { toast.error("Digita um número válido!"); return; }
+    setDailyGoal(val); 
+    localStorage.setItem("daily_goal", val); 
+    setIsDailyGoalModalOpen(false); 
+    toast.success("Meta atualizada!");
+  }
+
+  function prevMonth() { setCalendarDate(new Date(anoAtual, mesAtual - 1, 1)); }
+  function nextMonth() { setCalendarDate(new Date(anoAtual, mesAtual + 1, 1)); }
 
   // ==========================================
   // 4. CÁLCULOS DINÂMICOS
-  // Estes valores são recalculados automaticamente sempre que os 'dados' (state) mudam.
   // ==========================================
-  
-  // .reduce(): Percorre todas as sessões somando os minutos. Depois dividimos por 60 para obter o total em horas.
-  const totalHours = (data.sessions.reduce((acc, curr) => acc + curr.minutes, 0) / 60).toFixed(1);
-  
-  // .filter(): Cria uma lista contendo apenas as tarefas concluídas (done: true) e depois conta o tamanho (.length).
-  const doneTasks = data.tasks.filter((t) => t.done).length;
-  
-  // Calcula a média ponderada das notas. Se o aluno não tiver notas, a média é 0.
-  const avgGrade = data.grades.length > 0
-    ? data.grades.reduce((acc, g) => acc + g.value * g.weight, 0) / data.grades.reduce((acc, g) => acc + g.weight, 0)
-    : 0;
+  const minutosHoje = data.sessions.filter((s) => s.date === hojeStr).reduce((acc, curr) => acc + curr.minutes, 0);
+  const progressoHoje = Math.min((minutosHoje / dailyGoal) * 100, 100);
 
-  // Lógica de cálculo do Gráfico Semanal (Gera os dados dos últimos 7 dias)
   const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const now = new Date();
   const weekly = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now); 
-    d.setDate(now.getDate() - (6 - i)); // Volta 'x' dias no tempo
-    
-    // CORREÇÃO DE FUSO HORÁRIO NO GRÁFICO: Evita desalinhamento dos minutos estudados à noite
-    const ano = d.getFullYear();
-    const mes = String(d.getMonth() + 1).padStart(2, "0");
-    const dia = String(d.getDate()).padStart(2, "0");
-    const dateStr = `${ano}-${mes}-${dia}`;
-
-    // Soma os minutos estudados num dia específico para formar a coluna do gráfico
-    const mins = data.sessions.filter((s) => s.date === dateStr).reduce((a, b) => a + b.minutes, 0);
+    const d = new Date(); d.setDate(d.getDate() - (6 - i)); 
+    const mins = data.sessions.filter((s) => s.date === obterDataLocal(d)).reduce((a, b) => a + b.minutes, 0);
     return { label: days[d.getDay()], minutes: mins };
   });
-
-  // Pega o dia em que o aluno mais estudou para ser o limite máximo (100%) da altura do gráfico
   const maxWeeklyMins = Math.max(60, ...weekly.map((d) => d.minutes));
+  const temaAtualInfo = THEMES.find(t => t.id === activeTheme) || THEMES[0];
 
   // ==========================================
-  // 5. RENDERIZAÇÃO DA INTERFACE (HTML/JSX)
+  // 5. RENDERIZAÇÃO DA INTERFACE
   // ==========================================
-  // ANIMAÇÃO DE ENTRADA: Adicionada a classe 'animate-in fade-in slide-in-from-bottom-4 duration-500' para a página surgir suavemente
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-700 pb-10 px-2 md:px-6">
       
-      {/* SEÇÃO 1: CABEÇALHO (MENSAGEM DE BOAS VINDAS E FOGO) */}
-      {/* ANIMAÇÃO NO STREAK: Adicionado 'transition-transform hover:scale-105 duration-300' para o bloco de dias crescer levemente ao passar o mouse */}
-      <section className="flex flex-col md:flex-row justify-between items-center rounded-2xl bg-gradient-to-br from-primary/90 to-primary/70 p-6 text-white shadow-lg">
-        <div>
-          {/* Pega apenas o primeiro nome do estudante utilizando o .split() */}
+      {/* 1. CABEÇALHO */}
+      <section className="bg-primary text-primary-foreground rounded-[1.5rem] p-8 flex flex-col md:flex-row justify-between items-center shadow-sm">
+        <div className="flex flex-col items-start gap-3">
           <h1 className="text-3xl font-bold">Olá, {user?.nome?.split(" ")[0] || "Estudante"}!</h1>
-          <p className="opacity-90">Pequenos passos consistentes constroem grandes conquistas.</p>
+          <Badge className="bg-black/20 hover:bg-black/30 border-none text-[10px] font-bold tracking-wider px-3 py-1 rounded-full uppercase">
+            {temaAtualInfo.badge}
+          </Badge>
         </div>
-        
-        {/* Widget do Streak (Sequência) */}
-        <div className="flex items-center gap-3 bg-white/20 px-4 py-2 rounded-xl mt-4 md:mt-0 transition-transform hover:scale-105 duration-300 cursor-default">
-          <Flame className="text-yellow-400 animate-pulse" />
-          <div>
-            <p className="text-sm opacity-80">Sequência atual</p>
-            <p className="text-xl font-bold">{streak} {streak === 1 ? "dia" : "dias"}</p>
+        <div className="bg-white/20 px-6 py-3.5 rounded-2xl backdrop-blur-sm mt-4 md:mt-0 flex items-center gap-3">
+          <Flame className="text-yellow-300 h-7 w-7 animate-pulse" />
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase font-bold opacity-80 leading-tight">Sequência atual</span>
+            <span className="text-xl font-bold leading-tight">{streak} {streak === 1 ? "dia" : "dias"}</span>
           </div>
         </div>
       </section>
 
-      {/* SEÇÃO 2: CARDS DE RESUMO RÁPIDO */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Utilizamos o .map() para desenhar os Cards dinamicamente sem precisar repetir o mesmo HTML 4 vezes (Princípio DRY - Don't Repeat Yourself) */}
-        {/* ANIMAÇÃO NOS CARDS: Adicionado 'group', 'transition-all duration-300 hover:-translate-y-1 hover:shadow-md' para o card subir levemente */}
-        {/* ANIMAÇÃO NOS ÍCONES: Adicionado 'transition-transform duration-300 group-hover:scale-110' para o ícone crescer quando passamos o mouse no card */}
-        {[
-          { title: "Tempo Total", value: `${totalHours}h`, icon: Clock, color: "text-blue-500 bg-blue-100" },
-          { title: "Média Geral", value: avgGrade.toFixed(1), icon: Award, color: "text-green-500 bg-green-100" },
-          { title: "Tarefas Feitas", value: `${doneTasks}/${data.tasks.length}`, icon: CheckSquare, color: "text-purple-500 bg-purple-100" },
-          { title: "Objetivos Ativos", value: data.goals.length, icon: Target, color: "text-orange-500 bg-orange-100" },
-        ].map((card, index) => (
-          <Card key={index} className="group transition-all duration-300 hover:-translate-y-1 hover:shadow-md border border-border/50">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className={`p-3 rounded-xl transition-transform duration-300 group-hover:scale-110 ${card.color}`}>
-                <card.icon className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{card.title}</p>
-                <p className="text-2xl font-bold">{card.value}</p>
+      {/* 2. BARRA DE TEMAS */}
+      <div className="flex flex-wrap items-center gap-2 text-sm bg-card border border-border/50 p-2 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2 font-medium text-muted-foreground px-4">
+          <Palette className="h-4 w-4" /> Temas
+        </div>
+        {THEMES.map((theme) => {
+          const isUnlocked = streak >= theme.minDays; 
+          return (
+            <Button
+              key={theme.id}
+              variant={activeTheme === theme.id ? "default" : "ghost"}
+              size="sm"
+              disabled={!isUnlocked}
+              onClick={() => setActiveTheme(theme.id)}
+              className={`transition-all rounded-full h-8 px-4 ${!isUnlocked ? "opacity-50 hover:bg-transparent" : "hover:bg-muted"}`}
+            >
+              {!isUnlocked && <Lock className="h-3 w-3 mr-2" />}
+              {theme.name} 
+              {!isUnlocked && <span className="ml-1.5 opacity-70">({theme.minDays}d)</span>}
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* 3. LAYOUT PRINCIPAL */}
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        
+        {/* COLUNA ESQUERDA: GRÁFICO SEMANAL */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="hover:shadow-md transition-shadow duration-300 rounded-[1.5rem] border-border/50 shadow-sm">
+            <CardHeader className="p-8 pb-0">
+              <CardTitle className="text-sm font-bold">Estudo da Semana</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 pt-4">
+              <div className="flex h-[320px] items-end gap-4">
+                {weekly.map((dia, index) => (
+                  <div key={index} className="flex flex-1 flex-col items-center gap-3 h-full justify-end group">
+                    <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {dia.minutes}m
+                    </span>
+                    <div 
+                      className="w-full rounded-t-lg bg-primary transition-all duration-300 hover:opacity-85 cursor-pointer"
+                      style={{ height: `${(dia.minutes / maxWeeklyMins) * 100}%`, minHeight: "4px" }}
+                    />
+                    <span className="text-xs font-medium text-muted-foreground">{dia.label}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ))}
-      </section>
+        </div>
 
-      {/* SEÇÃO 3: GRÁFICO E LISTA DE OBJETIVOS */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        
-        {/* Gráfico Semanal (lg:col-span-2 faz ele ocupar 2/3 do espaço da tela) */}
-        {/* ANIMAÇÃO NO GRÁFICO: Adicionado 'hover:shadow-md transition-shadow duration-300' no Card */}
-        {/* ANIMAÇÃO NAS BARRAS: Adicionado 'hover:opacity-85 duration-200 cursor-pointer' para as barras reagirem ao toque */}
-        <Card className="lg:col-span-2 hover:shadow-md transition-shadow duration-300">
-          <CardHeader><CardTitle>Estudo da semana</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex h-40 items-end gap-2">
-              {/* .map() desenha uma barra vertical para cada dia da semana */}
-              {weekly.map((dia, index) => (
-                <div key={index} className="flex flex-1 flex-col items-center gap-2 h-full justify-end">
-                  {/* A altura de cada barra é definida utilizando Regra de Três simples diretamente no CSS inline */}
-                  <div 
-                    className="w-full rounded-t-md bg-primary transition-all duration-200 hover:opacity-85 cursor-pointer"
-                    style={{ height: `${(dia.minutes / maxWeeklyMins) * 100}%`, minHeight: "4px" }}
-                    title={`${dia.minutes} min`}
-                  />
-                  <span className="text-xs text-muted-foreground">{dia.label}</span>
-                </div>
-              ))}
+        {/* COLUNA DIREITA */}
+        <div className="space-y-6">
+          
+          {/* META DIÁRIA */}
+          <Card className="rounded-[1.5rem] border-border/50 shadow-sm p-6 flex flex-col justify-center">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Meta Diária</h3>
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-primary/10 text-primary" onClick={() => { setDailyGoalInput(dailyGoal); setIsDailyGoalModalOpen(true); }}>
+                <Pencil className="h-3 w-3" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-4xl font-black text-foreground">{minutosHoje}</span>
+                <span className="text-sm text-muted-foreground font-medium mb-1">/ {dailyGoal}m</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                <div className="bg-primary h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressoHoje}%` }} />
+              </div>
+            </div>
+          </Card>
 
-        {/* Widget de Objetivos (Este widget enxuto substitui a página antiga inteira!) */}
-        {/* ANIMAÇÃO NOS OBJETIVOS: Adicionado 'transition-all duration-200 hover:bg-muted/50 hover:translate-x-1' para o item mover suavemente para o lado ao passar o mouse */}
-        <Card className="hover:shadow-md transition-shadow duration-300">
-          <CardHeader className="flex flex-row justify-between items-center pb-2">
-            <CardTitle>Meus Objetivos</CardTitle>
-            {/* O onClick altera o state 'isGoalModalOpen' para true, forçando o Modal a aparecer na tela */}
-            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-muted" onClick={() => setIsGoalModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Renderização Condicional (Ternário): Se não houver objetivos, mostramos uma mensagem. Se houver, listamos eles. */}
-            {data.goals.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Nenhum objetivo. Clique no + para adicionar.</p>
-            ) : (
-              data.goals.map((goal, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 border rounded-lg transition-all duration-200 hover:bg-muted/50 hover:border-primary/30 hover:translate-x-1 cursor-default">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <p className="text-sm font-medium">{goal.title}</p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+          {/* CALENDÁRIO */}
+          <Card className="rounded-[1.5rem] border-border/50 shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" /> Visão do Mês
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-muted" onClick={prevMonth}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-[11px] font-bold w-[90px] text-center uppercase tracking-wider">
+                  {MESES[mesAtual]} {anoAtual}
+                </span>
+                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-muted" onClick={nextMonth}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-3 font-bold uppercase">
+              {['D','S','T','Q','Q','S','S'].map((d, i) => <span key={i}>{d}</span>)}
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {Array.from({ length: primeiroDiaSemana }).map((_, i) => <div key={`empty-${i}`} />)}
+              
+              {Array.from({ length: diasNoMes }).map((_, i) => {
+                const dia = i + 1;
+                const eHojeReal = isMesAtual && dia === hojeData.getDate();
+                
+                const temEvento = data.events.some(e => {
+                  const dataEvento = e.date || e.Date;
+                  if (!dataEvento) return false;
+                  if (dataEvento.includes("/")) {
+                    const [d, m] = dataEvento.split("/");
+                    return parseInt(d) === dia && parseInt(m) === mesAtual + 1;
+                  } else {
+                    const [y, m, d] = dataEvento.split("-");
+                    return parseInt(d) === dia && parseInt(m) === mesAtual + 1 && parseInt(y) === anoAtual;
+                  }
+                });
+
+                return (
+                  <div key={dia} className={`relative p-1 rounded-full text-xs flex justify-center items-center h-8 w-8 mx-auto ${eHojeReal ? 'bg-primary text-primary-foreground font-bold shadow-md' : 'hover:bg-muted transition-colors cursor-default'}`}>
+                    {dia}
+                    {temEvento && <div className={`absolute bottom-1 w-1 h-1 rounded-full ${eHojeReal ? 'bg-white' : 'bg-primary'}`} />}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* OBJETIVOS CRUDS SINCRONIZADOS */}
+          <Card className="rounded-[1.5rem] border-border/50 shadow-sm flex flex-col">
+            <CardHeader className="flex flex-row justify-between items-center p-6 pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Target className="h-4 w-4 text-muted-foreground" /> Objetivos
+              </CardTitle>
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary" onClick={() => setIsGoalModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-6 pt-2 space-y-2 overflow-y-auto max-h-[180px]">
+              {data.goals.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2 text-center italic">Sem objetivos definidos.</p>
+              ) : (
+                data.goals.map((goal) => {
+                  const currentId = goal.id || goal.Id;
+                  return (
+                    <div key={currentId} className="flex items-center justify-between p-3 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors group">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium leading-snug truncate">{goal.title}</p>
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10" 
+                        onClick={() => handleRemoveGoal(currentId)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+        </div>
       </div>
 
-      {/* SEÇÃO 4: O MODAL (Janela Suspensa) */}
-      {/* O componente Dialog só é renderizado de fato na tela quando a variável 'isGoalModalOpen' for igual a true */}
+      {/* MODAL: NOVO OBJETIVO */}
       <Dialog open={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} title="Novo Objetivo">
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Título do Objetivo</Label>
-            {/* O evento onChange atualiza a variável em tempo real conforme o usuário digita no teclado */}
-            <Input 
-              value={goalForm.title} 
-              onChange={(e) => setGoalForm({ title: e.target.value })} 
-              placeholder="Ex: Tirar um 10 no projeto final!" 
-            />
+            <Input value={goalForm.title} onChange={(e) => setGoalForm({ title: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") handleSaveGoal(); }} placeholder="Ex: Tirar 20 a Matemática!" className="h-11 rounded-xl" />
           </div>
-          {/* Ao clicar no botão, rodamos a função que checa os dados e salva na lista */}
-          <Button className="w-full mt-4 rounded-xl transition-opacity hover:opacity-90" onClick={handleSaveGoal}>
-            Guardar Objetivo
-          </Button>
+          <Button className="w-full mt-4 rounded-xl h-11 font-bold" onClick={handleSaveGoal}>Guardar Objetivo</Button>
+        </div>
+      </Dialog>
+
+      {/* MODAL: META DIÁRIA */}
+      <Dialog open={isDailyGoalModalOpen} onClose={() => setIsDailyGoalModalOpen(false)} title="Ajustar Meta Diária">
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Minutos por dia</Label>
+            <Input type="number" min="1" value={dailyGoalInput} onChange={(e) => setDailyGoalInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveDailyGoal(); }} className="h-11 rounded-xl" />
+          </div>
+          <Button className="w-full mt-4 rounded-xl h-11 font-bold" onClick={handleSaveDailyGoal}>Atualizar Meta</Button>
         </div>
       </Dialog>
 
