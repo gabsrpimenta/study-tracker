@@ -12,8 +12,8 @@ import Cadastro from "./pages/Cadastro";
 
 // Páginas Privadas (Centralizadas e Otimizadas)
 import Dashboard from "./pages/Dashboard";
-import Disciplinas from "./pages/Disciplinas";
-import Tarefas from "./pages/Tarefas";
+import DesempenhoAcademico from "./pages/DesempenhoAcademico";
+import Organizacao from "./pages/Organizacao";
 
 // Lista de rotas privadas (só acessíveis depois de fazer login).
 // Em vez de repetir <Route ... /> várias vezes, geramos com .map().
@@ -21,11 +21,11 @@ const rotasPrivadas = [
   // Dashboard agora concentra também as Estatísticas e os Objetivos
   { path: "/", element: <Dashboard /> },
   
-  // Disciplinas agora concentra as Avaliações e os Apontamentos (Notas)
-  { path: "/disciplinas", element: <Disciplinas /> },
+  // CORREÇÃO: O path agora é "/disciplinas" para bater certo com o Menu Lateral (Espaço Acadêmico)
+  { path: "/disciplinas", element: <DesempenhoAcademico /> },
   
   // Tarefas agora concentra também o Horário e a Agenda (Calendário)
-  { path: "/tarefas", element: <Tarefas /> },
+  { path: "/tarefas", element: <Organizacao /> },
 ];
 
 export default function App() {

@@ -1,4 +1,4 @@
-import { authFetch } from "./auth"; // Confirma que o caminho do import está correto
+import { authFetch } from "./auth"; 
 
 // ==========================================
 // FUNÇÃO GENÉRICA DE PEDIDOS PROTEGIDOS
@@ -8,7 +8,7 @@ async function fetchSecure(endpoint, method = "GET", body = null) {
   if (body) options.body = JSON.stringify(body);
 
   try {
-    const response = await authFetch(endpoint, options); // Usa a tua função do auth.js!
+    const response = await authFetch(endpoint, options); 
     if (response.status === 204 || method === "DELETE") return true;
     return await response.json();
   } catch (error) {
@@ -39,7 +39,9 @@ export const deleteGrade = (id) => fetchSecure(`/grades/${id}`, "DELETE");
 export const listSessions  = () => fetchSecure("/sessions");
 export const createSession = (session) => fetchSecure("/sessions", "POST", session);
 
+// ==========================================
 // CADEIRAS (DISCIPLINAS)
+// ==========================================
 const toFrontendSubject = (m) => ({
   id: m.id || m.Id,
   nome: m.nome || m.Nome,
@@ -67,28 +69,9 @@ export const listMaterias = listSubjects;
 export const getMaterias  = listSubjects;
 
 // ==========================================
-// OBJETIVOS (Usando LocalStorage temporariamente)
+// OBJETIVOS (Agora ligado à Base de Dados!)
 // ==========================================
-function lerLocal(chave) {
-  const raw = localStorage.getItem(chave);
-  return raw ? JSON.parse(raw) : [];
-}
-const gravarLocal = (chave, valor) => localStorage.setItem(chave, JSON.stringify(valor));
-const novoId = () => crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
-const goalsChave = "st.goals";
-
-export const listGoals = async () => lerLocal(goalsChave);
-export const createGoal = async (item) => {
-  const lista = lerLocal(goalsChave);
-  const novo = { ...item, id: novoId() };
-  gravarLocal(goalsChave, [novo, ...lista]);
-  return novo;
-};
-export const updateGoal = async (id, patch) => {
-  const lista = lerLocal(goalsChave).map((x) => (x.id === id ? { ...x, ...patch } : x));
-  gravarLocal(goalsChave, lista);
-  return lista.find((x) => x.id === id);
-};
-export const deleteGoal = async (id) => {
-  gravarLocal(goalsChave, lerLocal(goalsChave).filter((x) => x.id !== id));
-};
+export const listGoals   = () => fetchSecure("/goals");
+export const createGoal  = (goal) => fetchSecure("/goals", "POST", goal);
+export const updateGoal  = (id, goal) => fetchSecure(`/goals/${id}`, "PUT", goal);
+export const deleteGoal  = (id) => fetchSecure(`/goals/${id}`, "DELETE");
